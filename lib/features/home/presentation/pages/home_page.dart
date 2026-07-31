@@ -72,16 +72,15 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
                 child: _SearchBar(
                   onTap: () => context.go('/search'),
-                  onFilter: () => context.go('/search'),
                 ),
               ),
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.only(top: 20),
+                padding: const EdgeInsets.only(top: 24, bottom: 24),
                 child: _CategoriesRow(
                   selected: _selectedCategory,
                   onSelect: (c) => setState(() => _selectedCategory = c),
@@ -114,7 +113,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             if (filtered.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: _SectionHeader(
-                  title: 'Trabajos cerca de ti',
+                  title: 'Nuevos trabajos',
                   count: filtered.length,
                   onSeeAll: () => context.go('/search'),
                 ),
@@ -146,7 +145,10 @@ class _HomeHeader extends ConsumerWidget {
   final VoidCallback onNotifications;
   final VoidCallback onProfile;
 
-  const _HomeHeader({required this.onNotifications, required this.onProfile});
+  const _HomeHeader({
+    required this.onNotifications,
+    required this.onProfile,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -193,15 +195,9 @@ class _HomeHeader extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.location_on_rounded,
-                      size: 13,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      city,
-                      style: const TextStyle(
+                    const Text(
+                      'Listo para tu próximo trabajo',
+                      style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -221,14 +217,26 @@ class _HomeHeader extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    shape: BoxShape.circle,
                     border: Border.all(color: AppColors.border),
                   ),
                   child: const Icon(
                     Icons.notifications_none_rounded,
                     color: AppColors.textPrimary,
                     size: 20,
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
               ],
@@ -269,61 +277,29 @@ class _HomeHeader extends ConsumerWidget {
 
 class _SearchBar extends StatelessWidget {
   final VoidCallback onTap;
-  final VoidCallback onFilter;
 
-  const _SearchBar({required this.onTap, required this.onFilter});
+  const _SearchBar({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        height: 46,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFF0F0F0)),
         ),
         child: Row(
           children: [
             const Icon(
               Icons.search_rounded,
-              color: AppColors.textHint,
+              color: Color(0xFF9E9E9E),
               size: 20,
             ),
             const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                '¿Qué trabajo estás buscando?',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13.5,
-                  color: AppColors.textHint,
-                ),
-              ),
-            ),
-            GestureDetector(
-              onTap: onFilter,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.tune_rounded,
-                  color: AppColors.primary,
-                  size: 16,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -340,45 +316,54 @@ class _CategoriesRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 40,
+      height: 90,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: _kCategories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
         itemBuilder: (ctx, i) {
           final cat = _kCategories[i];
           final isSelected = selected == cat.label;
-          return ChoiceChip(
-            label: Row(
+          return GestureDetector(
+            onTap: () => onSelect(cat.label),
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  cat.icon,
-                  size: 14,
-                  color: isSelected ? Colors.white : cat.color,
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFFF3F8FF) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: isSelected ? AppColors.primary : const Color(0xFFF0F0F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Icon(
+                      cat.icon,
+                      size: 26,
+                      color: cat.color,
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(height: 8),
                 Text(
                   cat.label,
                   style: TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 12.5,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? Colors.white : AppColors.textPrimary,
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? AppColors.primary : const Color(0xFF4B5563),
                   ),
                 ),
               ],
-            ),
-            selected: isSelected,
-            onSelected: (_) => onSelect(cat.label),
-            backgroundColor: Colors.white,
-            selectedColor: AppColors.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: isSelected ? AppColors.primary : AppColors.border,
-              ),
             ),
           );
         },
