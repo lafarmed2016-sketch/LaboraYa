@@ -242,7 +242,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
   void _showSuccess() {
     if (!mounted) return;
     setState(() => _isLoading = false);
-    context.go('/my-jobs');
+    context.go('/');
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('¡Trabajo publicado con éxito!'),

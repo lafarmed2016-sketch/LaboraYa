@@ -75,7 +75,13 @@ class _MyJobsPageState extends ConsumerState<MyJobsPage>
                   Row(
                     children: [
                       GestureDetector(
-                        onTap: () => Navigator.pop(context),
+                        onTap: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/');
+                          }
+                        },
                         child: const Icon(
                           Icons.arrow_back_ios_new,
                           size: 18,
@@ -190,16 +196,6 @@ class _MyJobsPageState extends ConsumerState<MyJobsPage>
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/jobs/create'),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          'Publicar trabajo',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: AppColors.primary,
-        elevation: 4,
       ),
     );
   }
