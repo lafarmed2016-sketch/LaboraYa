@@ -11,7 +11,7 @@ class ApiConstants {
   static const String userProfile = '/api/v2/PersonaV2/Perfil';
   static const String userById = '/api/v2/PersonaV2'; // + /{id}
   static const String workerProfile = '/api/v2/PersonaV2/Perfil';
-  static const String deleteAccount = '/api/v2/UsuarioV2/Account';
+  static const String deleteAccount = '/api/v2/UsuarioV2/EliminarCuenta';
 
   // Categories V2
   static const String categories = '/api/v2/CategoriaV2';

@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/services/image_picker_service.dart';
 import 'package:laboraya_app/core/services/location_service.dart';
+import 'package:laboraya_app/core/network/api_client.dart';
+import 'package:laboraya_app/core/constants/api_constants.dart';
+import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
 
 // ─── CompleteProfilePage ──────────────────────────────────────────────────────
 // Pantalla post-registro para completar datos de confianza:
@@ -84,12 +87,41 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
   }
 
   Future<void> _save() async {
-    // Validar solo los campos que el usuario rellenó
     setState(() => _isSaving = true);
-    await Future.delayed(const Duration(milliseconds: 600)); // placeholder API
-    if (!mounted) return;
-    setState(() => _isSaving = false);
-    context.go('/');
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final payload = {
+        'documentoIdentidad': _dniCtrl.text,
+        'telefono': _phoneCtrl.text,
+        'distrito': _districtCtrl.text,
+      };
+      
+      final res = await apiClient.put(ApiConstants.userProfile, data: payload);
+      
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+
+      if (res.data != null && (res.data['codigoRespuesta'] == '0' || res.data['success'] == true)) {
+        ref.invalidate(profileProvider);
+        context.go('/');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.data?['mensaje'] ?? 'Error al guardar el perfil'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error de conexión. Inténtalo de nuevo.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   void _skip() => context.go('/');

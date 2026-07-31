@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/storage/secure_storage.dart';
+import 'package:laboraya_app/core/network/api_client.dart';
+import 'package:laboraya_app/core/constants/api_constants.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -335,9 +337,27 @@ class SettingsPage extends ConsumerWidget {
             ),
             onPressed: () async {
               Navigator.pop(ctx);
-              final storage = ref.read(secureStorageProvider);
-              await storage.clearAll();
-              if (context.mounted) context.go('/welcome');
+              try {
+                final apiClient = ref.read(apiClientProvider);
+                final response = await apiClient.delete(ApiConstants.deleteAccount);
+                if (response.data != null && response.data['codigoRespuesta'] == '0') {
+                  final storage = ref.read(secureStorageProvider);
+                  await storage.clearAll();
+                  if (context.mounted) context.go('/welcome');
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(response.data?['mensaje'] ?? 'Error al eliminar cuenta')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Error de conexión al intentar eliminar cuenta')),
+                  );
+                }
+              }
             },
             child: const Text(
               'Eliminar',
