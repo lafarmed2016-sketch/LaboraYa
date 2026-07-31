@@ -65,7 +65,7 @@ class JobsNotifier extends StateNotifier<JobsState> {
 
     try {
       final response = await _apiClient.get(
-        ApiConstants.jobs,
+        ApiConstants.jobsSearch,
         queryParameters: {
           'page': page,
           'pageSize': 20,
@@ -86,8 +86,9 @@ class JobsNotifier extends StateNotifier<JobsState> {
         return;
       }
 
-      if (data is Map<String, dynamic> && data['success'] == true) {
-        final jobsList = (data['data'] as List)
+      if (data is Map<String, dynamic> && (data['success'] == true || data['codigoRespuesta'] == '0')) {
+        final rawList = data['data'] ?? data['datos'] ?? [];
+        final jobsList = (rawList as List)
             .map((j) => JobEntity.fromJson(j as Map<String, dynamic>))
             .toList();
 
