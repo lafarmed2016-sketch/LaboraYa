@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -161,9 +162,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       radius: 42,
                       backgroundColor: Colors.white24,
                       backgroundImage: profile?.avatar != null
-                          ? (profile!.avatar!.startsWith('/') || !profile.avatar!.startsWith('http')
-                              ? FileImage(File(profile.avatar!)) as ImageProvider
-                              : NetworkImage(profile.avatar!) as ImageProvider)
+                          ? (profile!.avatar!.startsWith('data:image')
+                              ? MemoryImage(base64Decode(profile!.avatar!.split(',').last)) as ImageProvider
+                              : (profile!.avatar!.startsWith('/') || !profile.avatar!.startsWith('http')
+                                  ? FileImage(File(profile.avatar!)) as ImageProvider
+                                  : NetworkImage(profile.avatar!) as ImageProvider))
                           : null,
                       child: profile?.avatar == null
                           ? Text(

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -224,26 +225,18 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         'bio': _descriptionController.text.trim(),
       };
 
-      bool savedWithMultipart = false;
       if (_avatarFile != null) {
         await storage.saveLocalAvatarPath(_avatarFile!.path);
         try {
-          final formData = FormData.fromMap({
-            ...dataMap,
-            'foto': await MultipartFile.fromFile(_avatarFile!.path, filename: 'avatar.jpg'),
-            'avatar': await MultipartFile.fromFile(_avatarFile!.path, filename: 'avatar.jpg'),
-            'file': await MultipartFile.fromFile(_avatarFile!.path, filename: 'avatar.jpg'),
-          });
-          await api.put(ApiConstants.userProfile, data: formData);
-          savedWithMultipart = true;
+          final bytes = await _avatarFile!.readAsBytes();
+          final base64Image = base64Encode(bytes);
+          dataMap['ImagenPerfilUrl'] = 'data:image/jpeg;base64,$base64Image';
         } catch (e) {
-          debugPrint('Error uploading avatar via multipart, fallback/retry...: $e');
+          debugPrint('Error encoding avatar to base64: $e');
         }
       }
 
-      if (!savedWithMultipart) {
-        await api.put(ApiConstants.userProfile, data: dataMap);
-      }
+      await api.put(ApiConstants.userProfile, data: dataMap);
 
       ref.invalidate(profileProvider);
 

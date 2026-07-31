@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,13 +97,18 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
         'telefono': _phoneCtrl.text,
         'distrito': _districtCtrl.text,
       };
-      
-      final res = await apiClient.put(ApiConstants.userProfile, data: payload);
-      
+
       if (_photo != null) {
         final storage = ref.read(secureStorageProvider);
         await storage.saveLocalAvatarPath(_photo!.path);
+        try {
+          final bytes = await _photo!.readAsBytes();
+          final base64Image = base64Encode(bytes);
+          payload['ImagenPerfilUrl'] = 'data:image/jpeg;base64,$base64Image';
+        } catch (_) {}
       }
+      
+      final res = await apiClient.put(ApiConstants.userProfile, data: payload);
 
       if (!mounted) return;
       setState(() => _isSaving = false);
