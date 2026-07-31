@@ -48,14 +48,30 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   // Pre-llena los campos la primera vez que llegan los datos del perfil
+  // sin disparar _hasChanges
   void _initFields(UserProfile profile) {
     if (_initialized) return;
     _initialized = true;
+
+    // Remover listeners temporalmente para no marcar como modificado
+    _nameController.removeListener(_markChanged);
+    _lastNameController.removeListener(_markChanged);
+    _phoneController.removeListener(_markChanged);
+    _cityController.removeListener(_markChanged);
+    _descriptionController.removeListener(_markChanged);
+
     _nameController.text        = profile.firstName;
     _lastNameController.text    = profile.lastName;
     _phoneController.text       = profile.phone ?? '';
     _cityController.text        = profile.city ?? '';
     _descriptionController.text = profile.bio ?? '';
+
+    // Volver a agregar listeners después de pre-llenar
+    _nameController.addListener(_markChanged);
+    _lastNameController.addListener(_markChanged);
+    _phoneController.addListener(_markChanged);
+    _cityController.addListener(_markChanged);
+    _descriptionController.addListener(_markChanged);
   }
 
   void _markChanged() {
@@ -85,58 +101,101 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   Future<bool> _onWillPop() async {
     if (!_hasChanges) return true;
 
-    final result = await showDialog<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.white,
-        title: const Text(
-          '¿Descartar cambios?',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        content: const Text(
-          'Tienes modificaciones sin guardar en tu perfil.',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'Seguir editando',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              width: 36, height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+            const Icon(
+              Icons.edit_off_rounded,
+              size: 40,
+              color: AppColors.textHint,
             ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Descartar',
+            const SizedBox(height: 12),
+            const Text(
+              '¿Descartar cambios?',
               style: TextStyle(
                 fontFamily: 'Poppins',
+                fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppColors.textPrimary,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            const Text(
+              'Tienes cambios sin guardar en tu perfil.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Seguir editando',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: const BorderSide(color: AppColors.border),
+                  ),
+                ),
+                child: const Text(
+                  'Descartar cambios',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
 

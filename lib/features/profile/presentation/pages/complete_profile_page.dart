@@ -1,11 +1,16 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
+import 'package:laboraya_app/core/network/api_client.dart';
 import 'package:laboraya_app/core/services/image_picker_service.dart';
 import 'package:laboraya_app/core/services/location_service.dart';
+import 'package:laboraya_app/core/storage/secure_storage.dart';
+import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
 
 // ─── CompleteProfilePage ──────────────────────────────────────────────────────
 // Pantalla post-registro para completar datos de confianza:
@@ -84,12 +89,53 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
   }
 
   Future<void> _save() async {
-    // Validar solo los campos que el usuario rellenó
     setState(() => _isSaving = true);
-    await Future.delayed(const Duration(milliseconds: 600)); // placeholder API
-    if (!mounted) return;
-    setState(() => _isSaving = false);
-    context.go('/');
+    try {
+      final api     = ref.read(apiClientProvider);
+      final storage = ref.read(secureStorageProvider);
+
+      // 1 — Guardar foto localmente para que el profileProvider la muestre
+      if (_photo != null) {
+        await storage.saveLocalAvatarPath(_photo!.path);
+      }
+
+      // 2 — Enviar datos al backend
+      final dataMap = <String, dynamic>{
+        'Telefono':  _phoneCtrl.text.trim(),
+        'phone':     _phoneCtrl.text.trim(),
+        'Ciudad':    _districtCtrl.text.trim(),
+        'city':      _districtCtrl.text.trim(),
+        'Dni':       _dniCtrl.text.trim(),
+        'dni':       _dniCtrl.text.trim(),
+      };
+
+      if (_photo != null) {
+        try {
+          final formData = FormData.fromMap({
+            ...dataMap,
+            'foto':   await MultipartFile.fromFile(_photo!.path, filename: 'avatar.jpg'),
+            'avatar': await MultipartFile.fromFile(_photo!.path, filename: 'avatar.jpg'),
+          });
+          await api.put(ApiConstants.userProfile, data: formData);
+        } catch (_) {
+          // Si el multipart falla, enviar sin foto
+          await api.put(ApiConstants.userProfile, data: dataMap);
+        }
+      } else {
+        await api.put(ApiConstants.userProfile, data: dataMap);
+      }
+
+      // 3 — Invalidar el provider para que perfil se recargue con los nuevos datos
+      ref.invalidate(profileProvider);
+
+    } catch (_) {
+      // Si el API falla, al menos la foto queda guardada localmente
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        context.go('/');
+      }
+    }
   }
 
   void _skip() => context.go('/');
