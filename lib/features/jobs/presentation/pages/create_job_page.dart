@@ -112,7 +112,9 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
 
   void _next() {
     if (_step == 0) {
-      if (!_step0Key.currentState!.validate()) return;
+      // Validar formulario de forma segura
+      final formState = _step0Key.currentState;
+      if (formState == null || !formState.validate()) return;
       if (_location == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

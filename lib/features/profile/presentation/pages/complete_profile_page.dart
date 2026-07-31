@@ -1,13 +1,14 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
+import 'package:laboraya_app/core/network/api_client.dart';
 import 'package:laboraya_app/core/services/image_picker_service.dart';
 import 'package:laboraya_app/core/services/location_service.dart';
-import 'package:laboraya_app/core/network/api_client.dart';
-import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
 
 // ─── CompleteProfilePage ──────────────────────────────────────────────────────
