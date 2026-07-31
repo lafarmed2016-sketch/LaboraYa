@@ -5,10 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/widgets/app_empty_state.dart';
+import 'package:laboraya_app/core/widgets/app_error_state.dart';
 import 'package:laboraya_app/features/home/presentation/widgets/job_card.dart';
 import 'package:laboraya_app/features/home/presentation/widgets/home_shimmer.dart';
+import 'package:laboraya_app/features/home/presentation/widgets/home_header.dart';
+import 'package:laboraya_app/features/home/presentation/widgets/search_bar.dart';
+import 'package:laboraya_app/features/home/presentation/widgets/categories_row.dart';
+import 'package:laboraya_app/features/home/presentation/widgets/home_banner.dart';
+import 'package:laboraya_app/features/home/presentation/widgets/section_header.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
 
 const _kCategories = [
   _Cat('Todos', Icons.grid_view_rounded, Color(0xFF246BCE)),
@@ -167,6 +174,9 @@ class _HomeHeader extends ConsumerWidget {
     );
     final initial = firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U';
 
+    final notifications = ref.watch(notificationsProvider);
+    final hasUnread = notifications.any((n) => !n.isRead);
+
     return Container(
       color: Colors.white,
       padding: EdgeInsets.fromLTRB(
@@ -227,18 +237,19 @@ class _HomeHeader extends ConsumerWidget {
                     size: 20,
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.redAccent,
-                      shape: BoxShape.circle,
+                if (hasUnread)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             onPressed: onNotifications,

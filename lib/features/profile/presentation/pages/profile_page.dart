@@ -110,42 +110,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── HEADER — fondo azul pastel con blobs ──────────────
           Stack(
             clipBehavior: Clip.none,
             children: [
-              // Fondo degradado
-              Container(
-                height: 340,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_kBgTop, _kBgBottom],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-              ),
-              // Blob decorativo grande (arriba izquierda)
-              Positioned(
-                top: -40, left: -60,
-                child: Container(
-                  width: 220, height: 220,
-                  decoration: BoxDecoration(
-                      color: _kBlob.withValues(alpha: 0.45),
-                      shape: BoxShape.circle),
-                ),
-              ),
-              // Blob pequeño (derecha)
-              Positioned(
-                top: 60, right: -30,
-                child: Container(
-                  width: 130, height: 130,
-                  decoration: BoxDecoration(
-                      color: _kBlob.withValues(alpha: 0.30),
-                      shape: BoxShape.circle),
-                ),
-              ),
-
               // Contenido del header
               SafeArea(
                 bottom: false,

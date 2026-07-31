@@ -126,21 +126,15 @@ final conversationsProvider = FutureProvider<List<ConversationData>>((
     if (isSuccess) {
       final list = (data['datos'] ?? data['data'] ?? []) as List;
       return list.map((c) {
-        final lastAt = c['lastMessageAt'] ?? c['fechaUltimoMensaje'];
+        final lastAt = c['lastMessageAt'] ?? c['ultimoMensajeFecha'];
         return ConversationData(
-          conversationId: (c['conversationId'] ?? c['conversacionId'] ?? '1')
-              .toString(),
-          participantId: (c['participantId'] ?? c['usuarioContactoId'] ?? '1')
-              .toString(),
-          participantName:
-              (c['participantName'] ?? c['nombreContacto'] ?? 'Usuario')
-                  .toString(),
-          participantAvatar: c['participantAvatar'] ?? c['avatarContacto'],
+          conversationId: (c['conversationId'] ?? c['id'] ?? '1').toString(),
+          participantId: (c['participantId'] ?? c['otroUsuarioId'] ?? '1').toString(),
+          participantName: (c['participantName'] ?? c['otroUsuarioNombre'] ?? 'Usuario').toString(),
+          participantAvatar: c['participantAvatar'] ?? c['otroUsuarioFoto'],
           lastMessage: (c['lastMessage'] ?? c['ultimoMensaje'])?.toString(),
-          lastMessageAt: lastAt != null
-              ? DateTime.tryParse(lastAt.toString())
-              : null,
-          unreadCount: (c['unreadCount'] ?? c['cantidadNoLeida'] ?? 0) as int,
+          lastMessageAt: lastAt != null ? DateTime.tryParse(lastAt.toString()) : null,
+          unreadCount: (c['unreadCount'] ?? c['mensajesSinLeer'] ?? 0) as int,
           isOnline: c['isOnline'] == true || c['online'] == true,
         );
       }).toList();

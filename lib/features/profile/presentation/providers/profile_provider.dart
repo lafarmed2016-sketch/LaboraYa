@@ -67,7 +67,7 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
       final localAvatarPath = await storage.getLocalAvatarPath();
 
       return UserProfile(
-        id: (u['id'] ?? u['usuarioId'] ?? '1').toString(),
+        id: (u['usuarioId'] ?? u['id'] ?? '1').toString(),
         email: (u['correo'] ?? u['email'] ?? '').toString(),
         phone: (u['telefono'] ?? u['phone'])?.toString(),
         firstName: names.isNotEmpty ? names : 'Usuario',

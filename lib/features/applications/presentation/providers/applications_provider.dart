@@ -69,14 +69,10 @@ class ApplicationsNotifier extends StateNotifier<List<ApplicationData>> {
                 jobId: (a['jobId'] ?? a['trabajoId'] ?? '').toString(),
                 jobTitle: (a['title'] ?? a['trabajoTitulo'] ?? 'Trabajo')
                     .toString(),
-                employerName:
-                    (a['employerName'] ?? a['empleadorNombre'] ?? 'Empleador')
-                        .toString(),
+                employerName: (a['employerName'] ?? a['empleadorNombre'] ?? a['trabajadorNombre'] ?? 'Usuario').toString(),
                 status: (a['status'] ?? a['estado'] ?? 'PENDIENTE').toString(),
-                proposedBudget:
-                    ((a['proposedBudget'] ?? a['montoPropuesto'] ?? 0) as num)
-                        .toDouble(),
-                message: (a['message'] ?? a['mensaje'] ?? '').toString(),
+                proposedBudget: ((a['proposedBudget'] ?? a['montoPropuesto'] ?? a['precioPropuesto'] ?? 0) as num).toDouble(),
+                message: (a['message'] ?? a['mensaje'] ?? a['cartaPresentacion'] ?? '').toString(),
                 createdAt:
                     DateTime.tryParse(
                       (a['createdAt'] ?? a['fechaCreacion'] ?? '').toString(),

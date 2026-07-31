@@ -47,7 +47,7 @@ class NotificationsNotifier extends StateNotifier<List<NotificationData>> {
                 title: (n['title'] ?? n['titulo'] ?? 'Notificación').toString(),
                 body: (n['body'] ?? n['cuerpo'] ?? '').toString(),
                 data: n['data']?.toString(),
-                isRead: n['isRead'] as bool? ?? false,
+                isRead: n['esLeido'] == true || n['isRead'] == true,
                 createdAt:
                     DateTime.tryParse(
                       (n['createdAt'] ?? n['fechaCreacion'] ?? '').toString(),
