@@ -143,18 +143,37 @@ class JobsNotifier extends StateNotifier<JobsState> {
     int workersNeeded = 1,
     List<File> photos = const [],
   }) async {
+    final cats = [
+      'Plomería', 'Electricidad', 'Pintura', 'Carpintería', 'Albañilería', 
+      'Limpieza', 'Cerrajería', 'Mecánica', 'Jardinería', 'Mudanzas', 
+      'Instalaciones', 'Tecnología', 'Otros'
+    ];
+    final catId = cats.indexOf(categoryName) + 1;
+    final finalCatId = catId > 0 ? catId : 1;
+
     try {
       final dataMap = {
         'title': title,
+        'Titulo': title,
         'description': description,
+        'Descripcion': description,
+        'categoryId': finalCatId,
+        'CategoriaId': finalCatId,
         'modality': modality,
+        'TipoPago': modality.toUpperCase(),
         'address': address,
+        'Direccion': address,
+        'Ciudad': 'Lima, Perú',
         'latitude': latitude,
+        'Latitud': latitude,
         'longitude': longitude,
+        'Longitud': longitude,
         'budgetMin': budgetMin,
+        'Presupuesto': budgetMin,
         'budgetMax': budgetMax ?? budgetMin,
         'budgetFixed': true,
         'isUrgent': isUrgent,
+        'EsUrgente': isUrgent,
         'materials': materials,
         'duration': duration,
         'workersNeeded': workersNeeded,
@@ -184,13 +203,12 @@ class JobsNotifier extends StateNotifier<JobsState> {
           });
 
           response = await _apiClient.post(ApiConstants.jobsCreate, data: formData);
-          final status = response.statusCode;
-          if (status == 200 || status == 201) {
-            isSuccess = true;
-          } else {
-            final data = response.data;
-            if (data is Map && data['success'] == true) {
+          final data = response.data;
+          if (data is Map) {
+            if (data['codigoRespuesta'] == '0' || data['success'] == true) {
               isSuccess = true;
+            } else {
+              throw Exception(data['mensaje'] ?? 'Error desconocido');
             }
           }
         } catch (e) {
@@ -204,13 +222,13 @@ class JobsNotifier extends StateNotifier<JobsState> {
           ApiConstants.jobsCreate,
           data: dataMap,
         );
-        final status = response.statusCode;
-        if (status == 200 || status == 201) {
-          isSuccess = true;
-        } else {
-          final data = response.data;
-          if (data is Map && data['success'] == true) {
+        final data = response.data;
+        if (data is Map) {
+          if (data['codigoRespuesta'] == '0' || data['success'] == true) {
             isSuccess = true;
+          } else {
+            state = state.copyWith(error: data['mensaje'] ?? 'Error desconocido');
+            return false;
           }
         }
       }

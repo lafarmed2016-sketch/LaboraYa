@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -157,6 +159,10 @@ class _HomeHeader extends ConsumerWidget {
       data: (p) => p?.city ?? 'Lima, Perú',
       orElse: () => 'Lima, Perú',
     );
+    final avatar = profileAsync.maybeWhen(
+      data: (p) => p?.avatar,
+      orElse: () => null,
+    );
     final initial = firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U';
 
     return Container(
@@ -235,15 +241,24 @@ class _HomeHeader extends ConsumerWidget {
             child: CircleAvatar(
               radius: 20,
               backgroundColor: AppColors.primaryLight,
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
+              backgroundImage: avatar != null
+                  ? (avatar.startsWith('data:image')
+                      ? MemoryImage(base64Decode(avatar.split(',').last)) as ImageProvider
+                      : (avatar.startsWith('/') || !avatar.startsWith('http')
+                          ? FileImage(File(avatar)) as ImageProvider
+                          : NetworkImage(avatar) as ImageProvider))
+                  : null,
+              child: avatar == null
+                  ? Text(
+                      initial,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : null,
             ),
           ),
         ],
