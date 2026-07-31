@@ -26,6 +26,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   late final TextEditingController _cityController;
   late final TextEditingController _descriptionController;
 
+  bool _initialized = false;
   File? _avatarFile;
   bool _isLoading = false;
   bool _hasChanges = false;
@@ -33,19 +34,28 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    final profile = ref.read(profileProvider).value;
-
-    _nameController = TextEditingController(text: profile?.firstName ?? '');
-    _lastNameController = TextEditingController(text: profile?.lastName ?? '');
-    _phoneController = TextEditingController(text: profile?.phone ?? '');
-    _cityController = TextEditingController(text: profile?.city ?? '');
-    _descriptionController = TextEditingController(text: profile?.bio ?? '');
+    _nameController = TextEditingController();
+    _lastNameController = TextEditingController();
+    _phoneController = TextEditingController();
+    _cityController = TextEditingController();
+    _descriptionController = TextEditingController();
 
     _nameController.addListener(_markChanged);
     _lastNameController.addListener(_markChanged);
     _phoneController.addListener(_markChanged);
     _cityController.addListener(_markChanged);
     _descriptionController.addListener(_markChanged);
+  }
+
+  // Pre-llena los campos la primera vez que llegan los datos del perfil
+  void _initFields(UserProfile profile) {
+    if (_initialized) return;
+    _initialized = true;
+    _nameController.text        = profile.firstName;
+    _lastNameController.text    = profile.lastName;
+    _phoneController.text       = profile.phone ?? '';
+    _cityController.text        = profile.city ?? '';
+    _descriptionController.text = profile.bio ?? '';
   }
 
   void _markChanged() {
@@ -203,7 +213,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final profile = ref.watch(profileProvider).value;
+    final profileAsync = ref.watch(profileProvider);
+    final profile = profileAsync.value;
+
+    // Pre-llenar campos cuando los datos llegan del servidor
+    if (profile != null) _initFields(profile);
     return PopScope(
       canPop: !_hasChanges,
       onPopInvokedWithResult: (didPop, _) async {

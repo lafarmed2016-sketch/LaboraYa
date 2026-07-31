@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/services/auth_service.dart';
 import 'package:laboraya_app/core/widgets/app_ui_components.dart';
-
 class ChangePasswordPage extends ConsumerStatefulWidget {
   const ChangePasswordPage({super.key});
 
@@ -34,22 +33,13 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_newController.text != _confirmController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Las contraseñas no coinciden'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
     setState(() => _isLoading = true);
     try {
-      await ref
-          .read(authServiceProvider)
-          .changePassword(_newController.text.trim());
+      final authService = ref.read(authServiceProvider);
+      await (authService as RealAuthService).changePasswordWithCurrent(
+        current: _currentController.text.trim(),
+        newPassword: _newController.text.trim(),
+      );
       if (!mounted) return;
 
       showDialog(

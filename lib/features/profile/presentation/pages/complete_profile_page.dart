@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/services/image_picker_service.dart';
+import 'package:laboraya_app/core/services/location_service.dart';
 
 // ─── CompleteProfilePage ──────────────────────────────────────────────────────
 // Pantalla post-registro para completar datos de confianza:
@@ -26,6 +27,7 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
   final _districtCtrl = TextEditingController();
   File? _photo;
   bool _isSaving = false;
+  bool _gpsLoading = false;
 
   @override
   void dispose() {
@@ -48,6 +50,37 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
   Future<void> _pickPhoto() async {
     final file = await ImagePickerService.pickSingleImage(context);
     if (file != null) setState(() => _photo = file);
+  }
+
+  Future<void> _getGpsDistrict() async {
+    if (_gpsLoading) return;
+    setState(() => _gpsLoading = true);
+    try {
+      final result = await LocationService.getCurrentLocation();
+      if (!mounted) return;
+      if (result != null) {
+        _districtCtrl.text = result.district;
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ubicación detectada: ${result.district}'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _gpsLoading = false);
+    }
   }
 
   Future<void> _save() async {
@@ -368,13 +401,54 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
                           badgeColor: AppColors.info,
                         ),
                         const SizedBox(height: 10),
-                        _ProfileField(
-                          controller: _districtCtrl,
-                          hint: 'Ej: Miraflores, San Isidro...',
-                          keyboardType: TextInputType.text,
-                          textInputAction: TextInputAction.done,
-                          onChanged: (_) => setState(() {}),
-                          prefixIcon: Icons.location_on_outlined,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _ProfileField(
+                                controller: _districtCtrl,
+                                hint: 'Ej: Miraflores, San Isidro...',
+                                keyboardType: TextInputType.text,
+                                textInputAction: TextInputAction.done,
+                                onChanged: (_) => setState(() {}),
+                                prefixIcon: Icons.location_on_outlined,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            // ── Botón GPS ──────────────────────────────
+                            Tooltip(
+                              message: 'Usar mi ubicación GPS',
+                              child: InkWell(
+                                onTap: _getGpsDistrict,
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryLight,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: _gpsLoading
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(16),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.primary,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.my_location_rounded,
+                                          color: AppColors.primary,
+                                          size: 22,
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 32),
 
@@ -428,23 +502,21 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 4,
       children: [
         Icon(icon, size: 18, color: AppColors.textSecondary),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            title,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+        Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
@@ -453,8 +525,6 @@ class _SectionTitle extends StatelessWidget {
           ),
           child: Text(
             badge,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 10,

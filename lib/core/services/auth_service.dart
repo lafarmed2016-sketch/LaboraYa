@@ -255,4 +255,19 @@ class RealAuthService implements AuthService {
       data: {'newPassword': newPassword, 'NuevaClave': newPassword},
     );
   }
+
+  Future<void> changePasswordWithCurrent({
+    required String current,
+    required String newPassword,
+  }) async {
+    await apiClient.post(
+      ApiConstants.changePassword,
+      data: {
+        'ContrasenaActual': current,
+        'NuevaClave': newPassword,
+        'currentPassword': current,
+        'newPassword': newPassword,
+      },
+    );
+  }
 }
