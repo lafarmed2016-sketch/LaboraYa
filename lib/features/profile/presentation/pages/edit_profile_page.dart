@@ -214,7 +214,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         'Nombres': _nameController.text.trim(),
         'Apellidos': _lastNameController.text.trim(),
         'Telefono': _phoneController.text.trim(),
-        'Ciudad': _cityController.text.trim(),
+        'Distrito': _cityController.text.trim(),
         'Descripcion': _descriptionController.text.trim(),
         'PrecioHora': 0,
         'firstName': _nameController.text.trim(),
