@@ -21,6 +21,7 @@ import 'package:laboraya_app/features/reviews/presentation/pages/my_reviews_page
 import 'package:laboraya_app/features/verification/presentation/pages/verification_page.dart';
 import 'package:laboraya_app/features/settings/presentation/pages/settings_page.dart';
 import 'package:laboraya_app/features/profile/presentation/pages/edit_profile_page.dart';
+import 'package:laboraya_app/features/profile/presentation/pages/complete_profile_page.dart';
 import 'package:laboraya_app/features/applications/presentation/pages/my_applications_page.dart';
 import 'package:laboraya_app/features/applications/presentation/pages/received_applications_page.dart';
 import 'package:laboraya_app/features/applications/presentation/pages/apply_page.dart';
@@ -107,6 +108,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/edit-profile',
         builder: (_, __) => const EditProfilePage(),
+      ),
+      GoRoute(
+        path: '/complete-profile',
+        builder: (_, __) => const CompleteProfilePage(),
       ),
       GoRoute(path: '/help-center', builder: (_, __) => const HelpCenterPage()),
       GoRoute(path: '/terms', builder: (_, __) => const TermsPage()),

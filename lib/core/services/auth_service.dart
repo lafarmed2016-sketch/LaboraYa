@@ -73,8 +73,12 @@ class RealAuthService implements AuthService {
       final codigo = data['codigoRespuesta']?.toString();
 
       if (codigo != '0') {
-        final mensaje = data['mensaje'] ?? 'Usuario o contraseña incorrectos.';
-        throw Exception(mensaje.toString());
+        final mensaje = data['mensaje']?.toString().trim();
+        throw Exception(
+          (mensaje != null && mensaje.isNotEmpty)
+              ? mensaje
+              : 'Usuario o contraseña incorrectos.',
+        );
       }
 
       final dynamic rawAuthData = data['datos'] ?? data['data'] ?? data;

@@ -489,10 +489,10 @@ class _CreateJobFooter extends StatelessWidget {
                 ),
               ),
             ),
-            ),
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
                 onPressed: isLoading ? null : onNext,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -519,8 +519,8 @@ class _CreateJobFooter extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-              ),
             ),
+          ),
         ],
       ),
     );
