@@ -1,0 +1,43 @@
+// ============================================================================
+// AGREGAR ESTAS LÍNEAS A TU Program.cs EXISTENTE
+// (No reemplazar, solo agregar donde corresponda)
+// ============================================================================
+
+// ── PASO 1: Agregar estos "using" arriba de tu Program.cs ──
+using BaseLafarmed2026.Infrastructure;
+using BaseLafarmed2026.IServices;
+using BaseLafarmed2026.Services;
+using BaseLafarmed2026.Utils;
+
+// ── PASO 2: Agregar después de tus otros builder.Services ──
+// LaboraYa - Conexión a base de datos LaboraYa
+var laboraYaConn = builder.Configuration.GetConnectionString("LaboraYa")!;
+builder.Services.AddSingleton<ILaboraYaDb>(new LaboraYaDbConnection(laboraYaConn));
+
+// LaboraYa - Services
+builder.Services.AddScoped<ILY_JwtService, LaboraYaJwtService>();
+builder.Services.AddScoped<ILY_AuthService, LY_AuthService>();
+builder.Services.AddScoped<ILY_UserService, LY_UserService>();
+builder.Services.AddScoped<ILY_JobService, LY_JobService>();
+builder.Services.AddScoped<ILY_ApplicationService, LY_ApplicationService>();
+builder.Services.AddScoped<ILY_ContractService, LY_ContractService>();
+builder.Services.AddScoped<ILY_ChatService, LY_ChatService>();
+builder.Services.AddScoped<ILY_NotificationService, LY_NotificationService>();
+builder.Services.AddScoped<ILY_ReviewService, LY_ReviewService>();
+builder.Services.AddScoped<ILY_FavoriteService, LY_FavoriteService>();
+builder.Services.AddScoped<ILY_CategoryService, LY_CategoryService>();
+builder.Services.AddScoped<ILY_ReportService, LY_ReportService>();
+builder.Services.AddScoped<ILY_DocumentService, LY_DocumentService>();
+builder.Services.AddScoped<ILY_DeviceService, LY_DeviceService>();
+builder.Services.AddScoped<ILY_BlockedUserService, LY_BlockedUserService>();
+builder.Services.AddScoped<ILY_NotifSettingsService, LY_NotifSettingsService>();
+
+
+// ── PASO 3: Agregar en tu appsettings.json ──
+// Dentro de "ConnectionStrings" agregar:
+//   "LaboraYa": "Server=TU_SERVER;Database=LaboraYa;User Id=TU_USER;Password=TU_PASS;TrustServerCertificate=True;"
+//
+// Y agregar esta sección nueva:
+//   "LaboraYa": {
+//     "JwtSecret": "LaboraYa-clave-secreta-minimo-32-caracteres-cambiar-2024"
+//   }

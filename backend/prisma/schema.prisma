@@ -1,0 +1,697 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserType {
+  WORKER
+  EMPLOYER
+  BOTH
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BLOCKED
+  DELETED
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  RECEIVING_APPLICATIONS
+  IN_SELECTION
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  PAUSED
+  EXPIRED
+  REPORTED
+  BLOCKED
+}
+
+enum JobModality {
+  PER_DAY
+  PER_WEEK
+  PER_MONTH
+  PER_CONTRACT
+  PER_TASK
+  FULL_TIME
+  PART_TIME
+}
+
+enum MaterialsProvided {
+  BY_EMPLOYER
+  BY_WORKER
+  TO_COORDINATE
+}
+
+enum ApplicationStatus {
+  SENT
+  VIEWED
+  PRESELECTED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+  CANCELLED
+}
+
+enum ContractStatus {
+  PENDING
+  ACCEPTED
+  CONFIRMED
+  IN_PROGRESS
+  PENDING_CONFIRMATION
+  COMPLETED
+  CANCELLED
+  IN_DISPUTE
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  LOCATION
+  FILE
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum ReportReason {
+  FALSE_CONTENT
+  SCAM
+  INAPPROPRIATE
+  ILLEGAL
+  SPAM
+  DISCRIMINATION
+  HARASSMENT
+  IMPERSONATION
+  INCORRECT_INFO
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum NotificationType {
+  NEW_APPLICATION
+  APPLICATION_ACCEPTED
+  APPLICATION_REJECTED
+  NEW_MESSAGE
+  JOB_STARTING
+  JOB_STARTED
+  FINISH_REQUEST
+  JOB_COMPLETED
+  NEW_REVIEW
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+  JOB_EXPIRED
+  STATUS_CHANGE
+  ADMIN_NOTICE
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  YAPE
+  PLIN
+  TO_COORDINATE
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  DISPUTED
+}
+
+// ==================== MODELS ====================
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  phone         String?    @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  avatar        String?
+  role          UserRole   @default(USER)
+  userType      UserType   @default(BOTH)
+  status        UserStatus @default(ACTIVE)
+  emailVerified Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
+  city          String?
+  dateOfBirth   DateTime?
+  lastLoginAt   DateTime?
+  loginAttempts Int        @default(0)
+  lockedUntil   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  workerProfile  WorkerProfile?
+  employerProfile EmployerProfile?
+  devices        Device[]
+  refreshTokens  RefreshToken[]
+  jobsPublished  Job[]          @relation("publisher")
+  applications   Application[]
+  sentMessages   Message[]      @relation("sender")
+  conversations  ConversationParticipant[]
+  reviewsGiven   Review[]       @relation("reviewer")
+  reviewsReceived Review[]      @relation("reviewed")
+  notifications  Notification[]
+  favorites      Favorite[]
+  reports        Report[]       @relation("reporter")
+  reportsAgainst Report[]       @relation("reported")
+  blockedUsers   BlockedUser[]  @relation("blocker")
+  blockedBy      BlockedUser[]  @relation("blocked")
+  documents      Document[]
+  savedLocations SavedLocation[]
+  contracts      Contract[]     @relation("contractWorker")
+  contractsEmployer Contract[] @relation("contractEmployer")
+  auditLogs      AuditLog[]
+
+  @@map("users")
+}
+
+model WorkerProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  description     String?
+  yearsExperience Int?
+  available       Boolean  @default(true)
+  radiusKm        Float?   @default(10)
+  hourlyRate      Float?
+  languages       String[]
+  portfolio       String[]
+  completedJobs   Int      @default(0)
+  cancelledJobs   Int      @default(0)
+  averageRating   Float    @default(0)
+  totalReviews    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills     WorkerSkill[]
+  location   Unsupported("geometry(Point, 4326)")?
+
+  @@map("worker_profiles")
+}
+
+model EmployerProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  companyName     String?
+  companyType     String?  // persona, empresa
+  ruc             String?
+  description     String?
+  logo            String?
+  completedHires  Int      @default(0)
+  averageRating   Float    @default(0)
+  totalReviews    Int      @default(0)
+  verified        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("employer_profiles")
+}
+
+model Device {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String
+  platform  String   // android, ios
+  name      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@map("devices")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  image       String?
+  active      Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subcategories Subcategory[]
+  jobs          Job[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id         String   @id @default(uuid())
+  categoryId String
+  name       String
+  active     Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id])
+  jobs     Job[]
+
+  @@map("subcategories")
+}
+
+model Skill {
+  id   String @id @default(uuid())
+  name String @unique
+
+  workers WorkerSkill[]
+
+  @@map("skills")
+}
+
+model WorkerSkill {
+  id       String @id @default(uuid())
+  workerId String
+  skillId  String
+
+  worker WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  skill  Skill         @relation(fields: [skillId], references: [id])
+
+  @@unique([workerId, skillId])
+  @@map("worker_skills")
+}
+
+model Job {
+  id              String         @id @default(uuid())
+  publisherId     String
+  categoryId      String
+  subcategoryId   String?
+  title           String
+  description     String
+  address         String?
+  reference       String?
+  latitude        Float?
+  longitude       Float?
+  requiredDate    DateTime?
+  requiredTime    String?
+  endDate         DateTime?
+  duration        String?
+  workersNeeded   Int            @default(1)
+  experienceReq   String?
+  materials       MaterialsProvided @default(TO_COORDINATE)
+  modality        JobModality
+  budgetMin       Float?
+  budgetMax       Float?
+  budgetFixed     Boolean        @default(false)
+  currency        String         @default("PEN")
+  isUrgent        Boolean        @default(false)
+  isRemote        Boolean        @default(false)
+  status          JobStatus      @default(DRAFT)
+  applicantsCount Int            @default(0)
+  viewsCount      Int            @default(0)
+  applyDeadline   DateTime?
+  publishedAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  publisher     User             @relation("publisher", fields: [publisherId], references: [id])
+  category      Category         @relation(fields: [categoryId], references: [id])
+  subcategory   Subcategory?     @relation(fields: [subcategoryId], references: [id])
+  images        JobImage[]
+  applications  Application[]
+  contracts     Contract[]
+  favorites     Favorite[]
+  reports       Report[]
+  location      Unsupported("geometry(Point, 4326)")?
+
+  @@map("jobs")
+}
+
+model JobImage {
+  id        String   @id @default(uuid())
+  jobId     String
+  url       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("job_images")
+}
+
+model Application {
+  id             String            @id @default(uuid())
+  jobId          String
+  applicantId    String
+  message        String?
+  proposedBudget Float?
+  estimatedTime  String?
+  availability   String?
+  status         ApplicationStatus @default(SENT)
+  viewedAt       DateTime?
+  respondedAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  job       Job    @relation(fields: [jobId], references: [id])
+  applicant User   @relation(fields: [applicantId], references: [id])
+  contract  Contract?
+
+  @@unique([jobId, applicantId])
+  @@map("applications")
+}
+
+model Contract {
+  id            String         @id @default(uuid())
+  jobId         String
+  applicationId String         @unique
+  workerId      String
+  employerId    String
+  status        ContractStatus @default(PENDING)
+  agreedBudget  Float?
+  paymentMethod PaymentMethod  @default(TO_COORDINATE)
+  paymentStatus PaymentStatus  @default(PENDING)
+  startedAt     DateTime?
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  cancelReason  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  job          Job                    @relation(fields: [jobId], references: [id])
+  application  Application            @relation(fields: [applicationId], references: [id])
+  worker       User                   @relation("contractWorker", fields: [workerId], references: [id])
+  employer     User                   @relation("contractEmployer", fields: [employerId], references: [id])
+  statusHistory ContractStatusHistory[]
+  reviews      Review[]
+
+  @@map("contracts")
+}
+
+model ContractStatusHistory {
+  id         String         @id @default(uuid())
+  contractId String
+  status     ContractStatus
+  changedBy  String
+  note       String?
+  createdAt  DateTime       @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("contract_status_history")
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  jobId     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String   @id @default(uuid())
+  conversationId String
+  userId         String
+  lastReadAt     DateTime?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String        @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String?
+  type           MessageType   @default(TEXT)
+  status         MessageStatus @default(SENT)
+  replyToId      String?
+  deletedForAll  Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  conversation Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User             @relation("sender", fields: [senderId], references: [id])
+  replyTo      Message?         @relation("replies", fields: [replyToId], references: [id])
+  replies      Message[]        @relation("replies")
+  attachments  MessageAttachment[]
+
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id        String   @id @default(uuid())
+  messageId String
+  url       String
+  type      String
+  name      String?
+  size      Int?
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("message_attachments")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  contractId  String
+  reviewerId  String
+  reviewedId  String
+  rating      Float
+  comment     String?
+  quality     Int?
+  punctuality Int?
+  communication Int?
+  professionalism Int?
+  compliance  Int?
+  visible     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contract Contract @relation(fields: [contractId], references: [id])
+  reviewer User     @relation("reviewer", fields: [reviewerId], references: [id])
+  reviewed User     @relation("reviewed", fields: [reviewedId], references: [id])
+
+  @@unique([contractId, reviewerId])
+  @@map("reviews")
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  jobId     String?
+  targetId  String?
+  type      String   // job, worker, employer
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job? @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId, type])
+  @@map("favorites")
+}
+
+model Report {
+  id         String       @id @default(uuid())
+  reporterId String
+  reportedId String?
+  jobId      String?
+  reason     ReportReason
+  description String?
+  status     ReportStatus @default(OPEN)
+  resolution String?
+  resolvedBy String?
+  resolvedAt DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  reporter User  @relation("reporter", fields: [reporterId], references: [id])
+  reported User? @relation("reported", fields: [reportedId], references: [id])
+  job      Job?  @relation(fields: [jobId], references: [id])
+
+  @@map("reports")
+}
+
+model BlockedUser {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  blocker User @relation("blocker", fields: [blockerId], references: [id])
+  blocked User @relation("blocked", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+  @@map("blocked_users")
+}
+
+model Document {
+  id        String             @id @default(uuid())
+  userId    String
+  type      String             // identity, selfie, certificate, license, etc.
+  url       String
+  status    VerificationStatus @default(PENDING)
+  note      String?
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model SavedLocation {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  address   String
+  latitude  Float
+  longitude Float
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_locations")
+}
+
+model Country {
+  id       String @id @default(uuid())
+  name     String @unique
+  code     String @unique
+  currency String
+  symbol   String
+  timezone String
+  active   Boolean @default(true)
+
+  cities City[]
+
+  @@map("countries")
+}
+
+model City {
+  id        String @id @default(uuid())
+  countryId String
+  name      String
+  active    Boolean @default(true)
+
+  country   Country    @relation(fields: [countryId], references: [id])
+  districts District[]
+
+  @@map("cities")
+}
+
+model District {
+  id     String @id @default(uuid())
+  cityId String
+  name   String
+  active Boolean @default(true)
+
+  city City @relation(fields: [cityId], references: [id])
+
+  @@map("districts")
+}
+
+model AppSetting {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String
+  type  String @default("string")
+
+  @@map("app_settings")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  oldValues Json?
+  newValues Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}

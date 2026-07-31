@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Permite conexiones HTTPS con certificados autofirmados al servidor local -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.1.78</domain>
+        <trust-anchors>
+            <!-- Confía en las CAs del sistema -->
+            <certificates src="system" />
+            <!-- Confía en CAs del usuario (para certificados autofirmados instalados) -->
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
