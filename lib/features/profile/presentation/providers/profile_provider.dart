@@ -77,7 +77,7 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
         userType: (u['tipoUsuario'] ?? u['userType'] ?? 'BOTH')
             .toString()
             .toUpperCase(),
-        city: (u['ciudad'] ?? u['city'])?.toString(),
+        city: (u['distrito'] ?? u['provincia'] ?? u['departamento'] ?? u['ciudad'] ?? u['city'])?.toString(),
         bio: (u['descripcion'] ?? u['bio'] ?? u['workerDescription'])
             ?.toString(),
         isVerified: u['esVerificado'] == true || u['emailVerified'] == true,

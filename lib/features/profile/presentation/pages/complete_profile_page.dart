@@ -9,6 +9,7 @@ import 'package:laboraya_app/core/network/api_client.dart';
 import 'package:laboraya_app/core/services/image_picker_service.dart';
 import 'package:laboraya_app/core/services/location_service.dart';
 import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:laboraya_app/core/storage/secure_storage.dart';
 
 // ─── CompleteProfilePage ──────────────────────────────────────────────────────
 // Pantalla post-registro para completar datos de confianza:
@@ -98,6 +99,11 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
       
       final res = await apiClient.put(ApiConstants.userProfile, data: payload);
       
+      if (_photo != null) {
+        final storage = ref.read(secureStorageProvider);
+        await storage.saveLocalAvatarPath(_photo!.path);
+      }
+
       if (!mounted) return;
       setState(() => _isSaving = false);
 
