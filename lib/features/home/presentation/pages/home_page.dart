@@ -12,25 +12,6 @@ import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.
 import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
 
-const _kCategories = [
-  _Cat('Todos', Icons.grid_view_rounded, Color(0xFF246BCE)),
-  _Cat('Plomería', Icons.plumbing_rounded, Color(0xFF0D6EFD)),
-  _Cat('Electricidad', Icons.electrical_services_rounded, Color(0xFFD97706)),
-  _Cat('Pintura', Icons.format_paint_rounded, Color(0xFF7C3AED)),
-  _Cat('Carpintería', Icons.carpenter_rounded, Color(0xFF92400E)),
-  _Cat('Limpieza', Icons.cleaning_services_rounded, Color(0xFF059669)),
-  _Cat('Albañilería', Icons.construction_rounded, Color(0xFFEA580C)),
-  _Cat('Cerrajería', Icons.lock_rounded, Color(0xFF4B5563)),
-  _Cat('Mecánica', Icons.build_rounded, Color(0xFF1D4ED8)),
-];
-
-class _Cat {
-  final String label;
-  final IconData icon;
-  final Color color;
-  const _Cat(this.label, this.icon, this.color);
-}
-
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
@@ -39,24 +20,13 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  String _selectedCategory = 'Todos';
-
   List<dynamic> _filter(List<dynamic> jobs, String? myId, String? myName) {
-    var list = jobs.where((j) {
+    return jobs.where((j) {
       if (j is JobEntity) {
         return !j.isMine(myId: myId, myName: myName);
       }
       return true;
     }).toList();
-
-    if (_selectedCategory == 'Todos') return list;
-    return list
-        .where(
-          (j) => j.categoryName.toLowerCase().contains(
-            _selectedCategory.toLowerCase(),
-          ),
-        )
-        .toList();
   }
 
   @override
@@ -85,24 +55,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                child: _SearchBar(
-                  onTap: () => context.go('/search'),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 24, bottom: 24),
-                child: _CategoriesRow(
-                  selected: _selectedCategory,
-                  onSelect: (c) => setState(() => _selectedCategory = c),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: _HomeBanner(onTap: () => context.go('/search')),
               ),
             ),
@@ -170,10 +123,6 @@ class _HomeHeader extends ConsumerWidget {
       data: (p) => p?.firstName ?? 'tú',
       orElse: () => 'tú',
     );
-    final city = profileAsync.maybeWhen(
-      data: (p) => p?.city ?? 'Lima, Perú',
-      orElse: () => 'Lima, Perú',
-    );
     final avatar = profileAsync.maybeWhen(
       data: (p) => p?.avatar,
       orElse: () => null,
@@ -208,19 +157,14 @@ class _HomeHeader extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Listo para tu próximo trabajo',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+                const Text(
+                  'Listo para tu próximo trabajo',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -287,103 +231,6 @@ class _HomeHeader extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SearchBar extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _SearchBar({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 46,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFF0F0F0)),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.search_rounded,
-              color: Color(0xFF9E9E9E),
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoriesRow extends StatelessWidget {
-  final String selected;
-  final ValueChanged<String> onSelect;
-
-  const _CategoriesRow({required this.selected, required this.onSelect});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 90,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: _kCategories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
-        itemBuilder: (ctx, i) {
-          final cat = _kCategories[i];
-          final isSelected = selected == cat.label;
-          return GestureDetector(
-            onTap: () => onSelect(cat.label),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFF3F8FF) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isSelected ? AppColors.primary : const Color(0xFFF0F0F0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Icon(
-                      cat.icon,
-                      size: 26,
-                      color: cat.color,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  cat.label,
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? AppColors.primary : const Color(0xFF4B5563),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }

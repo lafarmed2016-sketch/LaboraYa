@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/services/location_service.dart';
+import 'package:laboraya_app/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:laboraya_app/features/map/presentation/widgets/osm_map_widget.dart';
@@ -17,16 +19,18 @@ class SearchJobsPage extends ConsumerStatefulWidget {
 }
 
 class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
-  final _searchCtrl  = TextEditingController();
-  final _sheetCtrl   = DraggableScrollableController();
+  final _searchCtrl = TextEditingController();
+  final _sheetCtrl = DraggableScrollableController();
   Timer? _debounce;
-  bool _searchOpen   = false;
+  bool _searchOpen = false;
 
   // Tamaños del panel (fracción de pantalla)
-  // _minSize debe dejar solo el handle visible justo encima del navbar (~80px)
-  static const double _minSize  = 0.09;
-  static const double _midSize  = 0.50;
-  static const double _maxSize  = 0.88;
+  static const double _minSize = 0.38;
+  static const double _midSize = 0.60;
+  static const double _maxSize = 0.88;
+
+  double _currentSheetSize = _minSize;
+  String _currentSort = 'Más recientes';
 
   @override
   void dispose() {
@@ -82,7 +86,7 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: const Color(0xFFCBD5E1),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -93,8 +97,8 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFFEBF3FF),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       job.categoryName,
@@ -152,143 +156,120 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                   fontFamily: 'Poppins',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (job.address != null && job.address!.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        job.address!,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12.5,
-                          color: AppColors.textSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 12),
-              // Publicador
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.primaryLight,
-                      backgroundImage: (job.publisherAvatar != null && job.publisherAvatar!.isNotEmpty)
-                          ? NetworkImage(job.publisherAvatar!)
-                          : null,
-                      child: (job.publisherAvatar == null || job.publisherAvatar!.isEmpty)
-                          ? Text(
-                              job.publisherName.isNotEmpty ? job.publisherName[0].toUpperCase() : 'U',
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
-                              ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            job.publisherName,
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const Text(
-                            'Publicador verificado',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 11,
-                              color: AppColors.textHint,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  color: Color(0xFF0F172A),
                 ),
               ),
-              const SizedBox(height: 16),
-              // Botones de acción
+              const SizedBox(height: 8),
+              // Ubicación
               Row(
                 children: [
-                  // Botón Chatear
+                  const Icon(Icons.location_on_outlined,
+                      size: 15, color: AppColors.primary),
+                  const SizedBox(width: 4),
                   Expanded(
-                    flex: 2,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        context.push(
-                          '/chat/new_${job.publisherId}',
-                          extra: {
-                            'name': job.publisherName,
-                            'avatar': job.publisherAvatar,
-                            'participantId': job.publisherId,
-                          },
-                        );
-                      },
-                      icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                      label: const Text(
-                        'Chatear',
-                        style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13.5),
+                    child: Text(
+                      job.address ?? 'Lima',
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary, width: 1.5),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Botón Postular / Ver detalle
-                  Expanded(
-                    flex: 3,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        context.push('/jobs/${job.id}');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text(
-                        'Postular / Ver detalle',
-                        style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 13.5),
-                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+              // Botón ver detalle
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.push('/jobs/${job.id}');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Ver detalle del trabajo',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSortOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Ordenar trabajos por',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                title: const Text('Más recientes', style: TextStyle(fontFamily: 'Poppins', fontSize: 14)),
+                trailing: _currentSort == 'Más recientes' ? const Icon(Icons.check, color: AppColors.primary) : null,
+                onTap: () {
+                  setState(() => _currentSort = 'Más recientes');
+                  Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                title: const Text('Menor precio', style: TextStyle(fontFamily: 'Poppins', fontSize: 14)),
+                trailing: _currentSort == 'Menor precio' ? const Icon(Icons.check, color: AppColors.primary) : null,
+                onTap: () {
+                  setState(() => _currentSort = 'Menor precio');
+                  Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                title: const Text('Mayor precio', style: TextStyle(fontFamily: 'Poppins', fontSize: 14)),
+                trailing: _currentSort == 'Mayor precio' ? const Icon(Icons.check, color: AppColors.primary) : null,
+                onTap: () {
+                  setState(() => _currentSort = 'Mayor precio');
+                  Navigator.pop(ctx);
+                },
               ),
             ],
           ),
@@ -300,23 +281,33 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
   @override
   Widget build(BuildContext context) {
     final jobsState = ref.watch(jobsProvider);
-    final profile   = ref.watch(profileProvider).value;
-    final otherJobs = jobsState.jobs
+    final profile = ref.watch(profileProvider).value;
+    var otherJobs = jobsState.jobs
         .where((j) => !j.isMine(myId: profile?.id, myName: profile?.fullName))
         .toList();
-    final top       = MediaQuery.of(context).padding.top;
-    final screenH   = MediaQuery.of(context).size.height;
+
+    // Ordenar trabajos según selección
+    if (_currentSort == 'Menor precio') {
+      otherJobs.sort((a, b) => (a.budgetMin ?? 0).compareTo(b.budgetMin ?? 0));
+    } else if (_currentSort == 'Mayor precio') {
+      otherJobs.sort((a, b) => (b.budgetMax ?? b.budgetMin ?? 0).compareTo(a.budgetMax ?? a.budgetMin ?? 0));
+    } else {
+      otherJobs.sort((a, b) => (b.publishedAt ?? b.createdAt).compareTo(a.publishedAt ?? a.createdAt));
+    }
+
+    final top = MediaQuery.of(context).padding.top;
+    final screenH = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // ── 1. MAPA pantalla completa ────────────────────────
           Positioned.fill(
             child: RepaintBoundary(
               child: OsmMapWidget(
-                latitude: -12.1186,
-                longitude: -77.0318,
+                latitude: -12.0464,
+                longitude: -77.0428,
                 zoom: 13,
                 height: screenH,
                 markers: otherJobs
@@ -349,7 +340,7 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                       onSearch: _onSearch,
                       onClose: _toggleSearch,
                     )
-                  // Solo lupa
+                  // Solo lupa flotante blanca con ícono azul
                   : _SearchIcon(
                       key: const ValueKey('icon'),
                       onTap: _toggleSearch,
@@ -357,40 +348,21 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
             ),
           ),
 
-          // ── 3. PANEL DESLIZABLE ──────────────────────────────
-          DraggableScrollableSheet(
-            controller: _sheetCtrl,
-            initialChildSize: _minSize,
-            minChildSize: _minSize,
-            maxChildSize: _maxSize,
-            snap: true,
-            snapSizes: const [_minSize, _midSize, _maxSize],
-            builder: (ctx, scrollCtrl) => _BottomPanel(
-              scrollController: scrollCtrl,
-              jobsState: jobsState,
-              jobs: otherJobs,
-              onJobTap: (id) => context.push('/jobs/$id'),
-              onRefresh: () =>
-                  ref.read(jobsProvider.notifier).loadJobs(refresh: true),
-            ),
-          ),
-
-          // ── 4. BOTÓN GPS (esquina inferior derecha, encima del panel) ──
+          // ── 3. BOTÓN GPS (esquina inferior derecha, flotando encima del panel) ──
           Positioned(
             right: 16,
-            bottom: screenH * _minSize + 16,
+            bottom: (screenH * _currentSheetSize) + 16,
             child: _GpsLocationButton(
               onTap: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 try {
                   final result = await LocationService.getCurrentLocation();
                   if (!mounted) return;
                   if (result != null) {
-                    // Recargar trabajos y centrar mapa en ubicación actual
                     ref.read(jobsProvider.notifier).loadJobs(refresh: true);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(
-                        content: Text(
-                            'Mostrando trabajos cerca de ${result.district}'),
+                        content: Text('Mostrando trabajos cerca de ${result.district}'),
                         backgroundColor: AppColors.success,
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -398,10 +370,9 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                   }
                 } catch (e) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(
-                      content: Text(
-                          e.toString().replaceAll('Exception: ', '')),
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
                       backgroundColor: AppColors.error,
                       behavior: SnackBarBehavior.floating,
                     ),
@@ -410,13 +381,41 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
               },
             ),
           ),
+
+          // ── 4. PANEL DESLIZABLE INFERIOR ──────────────────────
+          NotificationListener<DraggableScrollableNotification>(
+            onNotification: (notification) {
+              setState(() {
+                _currentSheetSize = notification.extent;
+              });
+              return true;
+            },
+            child: DraggableScrollableSheet(
+              controller: _sheetCtrl,
+              initialChildSize: _minSize,
+              minChildSize: _minSize,
+              maxChildSize: _maxSize,
+              snap: true,
+              snapSizes: const [_minSize, _midSize, _maxSize],
+              builder: (ctx, scrollCtrl) => _BottomPanel(
+                scrollController: scrollCtrl,
+                jobsState: jobsState,
+                jobs: otherJobs,
+                currentSort: _currentSort,
+                onSortTap: _showSortOptions,
+                onJobTap: (id) => context.push('/jobs/$id'),
+                onRefresh: () =>
+                    ref.read(jobsProvider.notifier).loadJobs(refresh: true),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// ─── Botón GPS de ubicación actual ───────────────────────────────────────────
+// ─── Botón GPS flotante ───────────────────────────────────────────────────────
 
 class _GpsLocationButton extends StatefulWidget {
   final VoidCallback onTap;
@@ -432,40 +431,47 @@ class _GpsLocationButtonState extends State<_GpsLocationButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _loading ? null : () async {
-        setState(() => _loading = true);
-        widget.onTap();
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) setState(() => _loading = false);
-      },
+      onTap: _loading
+          ? null
+          : () async {
+              setState(() => _loading = true);
+              widget.onTap();
+              await Future.delayed(const Duration(seconds: 2));
+              if (mounted) setState(() => _loading = false);
+            },
       child: Container(
-        width: 52,
-        height: 52,
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 12,
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 10,
               offset: const Offset(0, 3),
             ),
           ],
         ),
         child: _loading
             ? const Padding(
-                padding: EdgeInsets.all(14),
+                padding: EdgeInsets.all(12),
                 child: CircularProgressIndicator(
-                    strokeWidth: 2.5, color: AppColors.primary),
+                  strokeWidth: 2.5,
+                  color: AppColors.primary,
+                ),
               )
-            : const Icon(Icons.my_location_rounded,
-                color: AppColors.primary, size: 24),
+            : const Icon(
+                Icons.my_location_rounded,
+                color: AppColors.primary,
+                size: 22,
+              ),
       ),
     );
   }
 }
 
-// ─── Ícono de lupa ────────────────────────────────────────────────────────────
+// ─── Ícono de lupa flotante (Superior Derecha) ────────────────────────────────
 
 class _SearchIcon extends StatelessWidget {
   final VoidCallback onTap;
@@ -476,15 +482,15 @@ class _SearchIcon extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 44,
-        height: 44,
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 12,
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 10,
               offset: const Offset(0, 3),
             ),
           ],
@@ -492,7 +498,7 @@ class _SearchIcon extends StatelessWidget {
         child: const Icon(
           Icons.search_rounded,
           color: AppColors.primary,
-          size: 22,
+          size: 24,
         ),
       ),
     );
@@ -505,11 +511,12 @@ class _SearchBar extends StatelessWidget {
   final TextEditingController ctrl;
   final ValueChanged<String> onSearch;
   final VoidCallback onClose;
-  const _SearchBar(
-      {super.key,
-      required this.ctrl,
-      required this.onSearch,
-      required this.onClose});
+  const _SearchBar({
+    super.key,
+    required this.ctrl,
+    required this.onSearch,
+    required this.onClose,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -518,10 +525,10 @@ class _SearchBar extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
+            color: Colors.black.withValues(alpha: 0.14),
             blurRadius: 14,
             offset: const Offset(0, 3),
           ),
@@ -529,24 +536,25 @@ class _SearchBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const SizedBox(width: 12),
-          const Icon(Icons.search_rounded,
-              color: AppColors.primary, size: 20),
+          const SizedBox(width: 14),
+          const Icon(Icons.search_rounded, color: AppColors.primary, size: 22),
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
               controller: ctrl,
               autofocus: true,
               style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  color: AppColors.textPrimary),
+                fontFamily: 'Poppins',
+                fontSize: 14,
+                color: Color(0xFF0F172A),
+              ),
               decoration: const InputDecoration(
                 hintText: 'Buscar trabajo o zona...',
                 hintStyle: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    color: AppColors.textHint),
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  color: Color(0xFF94A3B8),
+                ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -558,11 +566,8 @@ class _SearchBar extends StatelessWidget {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF64748B)),
             onPressed: onClose,
-            icon: const Icon(Icons.close_rounded,
-                color: AppColors.textHint, size: 18),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           ),
         ],
       ),
@@ -576,6 +581,8 @@ class _BottomPanel extends StatelessWidget {
   final ScrollController scrollController;
   final JobsState jobsState;
   final List<JobEntity> jobs;
+  final String currentSort;
+  final VoidCallback onSortTap;
   final ValueChanged<String> onJobTap;
   final Future<void> Function() onRefresh;
 
@@ -583,21 +590,22 @@ class _BottomPanel extends StatelessWidget {
     required this.scrollController,
     required this.jobsState,
     required this.jobs,
+    required this.currentSort,
+    required this.onSortTap,
     required this.onJobTap,
     required this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x22000000),
-            blurRadius: 16,
+            color: Color(0x18000000),
+            blurRadius: 18,
             offset: Offset(0, -3),
           ),
         ],
@@ -609,7 +617,7 @@ class _BottomPanel extends StatelessWidget {
           controller: scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // ── Handle + contador ──────────────────────────────
+            // ── Handle + Encabezado idéntico al diseño ──────────────
             SliverToBoxAdapter(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -617,45 +625,61 @@ class _BottomPanel extends StatelessWidget {
                   // Handle
                   Center(
                     child: Container(
-                      width: 36,
+                      width: 38,
                       height: 4,
-                      margin:
-                          const EdgeInsets.only(top: 10, bottom: 10),
+                      margin: const EdgeInsets.only(top: 10, bottom: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.border,
+                        color: const Color(0xFFCBD5E1),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                  // Contador — solo visible cuando el panel está expandido
-                  if (jobs.isNotEmpty)
-                    Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                      child: Row(
-                        children: [
-                          Text(
-                            '${jobs.length} trabajos encontrados',
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                  // Encabezado: "X trabajos encontrados" | "Más recientes ⌄"
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${jobs.length} trabajos encontrados',
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const Spacer(),
+                        InkWell(
+                          onTap: onSortTap,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 2),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  currentSort,
+                                  style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
+                              ],
                             ),
                           ),
-                          const Spacer(),
-                          const Text(
-                            'Más recientes ↓',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                  ),
                 ],
               ),
             ),
@@ -666,8 +690,7 @@ class _BottomPanel extends StatelessWidget {
                 child: Padding(
                   padding: EdgeInsets.only(top: 24),
                   child: Center(
-                    child: CircularProgressIndicator(
-                        color: AppColors.primary),
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   ),
                 ),
               ),
@@ -676,31 +699,29 @@ class _BottomPanel extends StatelessWidget {
             if (!jobsState.isLoading && jobs.isEmpty)
               const SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.only(top: 24),
+                  padding: EdgeInsets.only(top: 32),
                   child: Center(
                     child: Text(
-                      'No hay trabajos disponibles',
+                      'No hay trabajos disponibles en esta zona',
                       style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          color: AppColors.textHint),
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        color: Color(0xFF94A3B8),
+                      ),
                     ),
                   ),
                 ),
               ),
 
-            // ── Lista de trabajos compacta ─────────────────────
+            // ── Lista de tarjetas de trabajo (Diseño idéntico a la imagen) ──
             if (jobs.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (ctx, i) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _SearchJobTile(
-                        job: jobs[i],
-                        onTap: () => onJobTap(jobs[i].id),
-                      ),
+                    (ctx, i) => _SearchJobTile(
+                      job: jobs[i],
+                      onTap: () => onJobTap(jobs[i].id),
                     ),
                     childCount: jobs.length,
                   ),
@@ -713,9 +734,9 @@ class _BottomPanel extends StatelessWidget {
   }
 }
 
-// ─── Tarjeta compacta para el buscador y mapa (Sin fotos falsas) ─────────────
+// ─── Tarjeta de trabajo idéntica a la imagen ──────────────────────────────────
 
-class _SearchJobTile extends StatelessWidget {
+class _SearchJobTile extends ConsumerWidget {
   final JobEntity job;
   final VoidCallback onTap;
 
@@ -767,192 +788,287 @@ class _SearchJobTile extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final catColor = _categoryColor(job.categoryName);
+  String _formatJobTime(DateTime? dt) {
+    if (dt == null) return 'Reciente';
+    final now = DateTime.now();
+    final difference = now.difference(dt);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border, width: 0.8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+    final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+    final yesterday = now.subtract(const Duration(days: 1));
+    final isYesterday = dt.year == yesterday.year && dt.month == yesterday.month && dt.day == yesterday.day;
+
+    final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minuteStr = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour < 12 ? 'a. m.' : 'p. m.';
+    final timeStr = '$hour12:$minuteStr $period';
+
+    if (isToday) {
+      return 'Hoy, $timeStr';
+    } else if (isYesterday) {
+      return 'Ayer, $timeStr';
+    } else if (difference.inDays < 7) {
+      const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+      final dayName = days[dt.weekday - 1];
+      return '$dayName, $timeStr';
+    } else {
+      return '${dt.day}/${dt.month}/${dt.year}';
+    }
+  }
+
+  Widget _buildImage(BuildContext context) {
+    final catColor = _categoryColor(job.categoryName);
+    if (job.images.isNotEmpty) {
+      final img = job.images.first;
+      if (img.startsWith('http')) {
+        return Image.network(
+          img,
+          width: 96,
+          height: 96,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildPlaceholder(catColor),
+        );
+      } else {
+        return Image.file(
+          File(img),
+          width: 96,
+          height: 96,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildPlaceholder(catColor),
+        );
+      }
+    }
+    return _buildPlaceholder(catColor);
+  }
+
+  Widget _buildPlaceholder(Color catColor) {
+    return Container(
+      width: 96,
+      height: 96,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _categoryIcon(job.categoryName),
+              color: catColor,
+              size: 32,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              job.categoryName,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 9.5,
+                fontWeight: FontWeight.w600,
+                color: catColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Ícono de categoría limpio
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: catColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                _categoryIcon(job.categoryName),
-                color: catColor,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Detalles del trabajo
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Badges (Categoría + Urgente)
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: catColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          job.categoryName,
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
-                            color: catColor,
-                          ),
-                        ),
-                      ),
-                      if (job.isUrgent) ...[
-                        const SizedBox(width: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFECEB),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.bolt, size: 10, color: Color(0xFFE53935)),
-                              SizedBox(width: 1),
-                              Text(
-                                'URGENTE',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFFE53935),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  // Título
-                  Text(
-                    job.title,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  // Ubicación y Publicador privado
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined,
-                          size: 12, color: AppColors.textSecondary),
-                      const SizedBox(width: 2),
-                      Flexible(
-                        child: Text(
-                          job.address ?? 'Lima',
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Container(
-                        width: 3,
-                        height: 3,
-                        margin: const EdgeInsets.symmetric(horizontal: 5),
-                        decoration: const BoxDecoration(
-                          color: AppColors.textHint,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      Text(
-                        job.publisherName,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Presupuesto y Modalidad
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final favorites = ref.watch(favoritesProvider);
+    final isFav = favorites.contains(job.id);
+    final timeFormatted = _formatJobTime(job.publishedAt ?? job.createdAt);
+    final modalityLabel = job.modality == 'FIXED' ? 'Fijo' : 'Estimado';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  job.formattedBudget,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
+                // ── Foto cuadrada pequeña ──────────────────────────────
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: 96,
+                    height: 96,
+                    child: _buildImage(context),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 1.5),
-                  decoration: BoxDecoration(
-                    color: AppColors.inputBg,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.border, width: 0.6),
-                  ),
-                  child: Text(
-                    job.modalityLabel,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                    ),
+                const SizedBox(width: 12),
+
+                // ── Contenido derecho ─────────────────────────────────
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Fila 1: Título y Precio
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              job.title,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                                height: 1.25,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            job.formattedBudget,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Fila 2: Subtítulo de precio alineado a la derecha
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          modalityLabel,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+
+                      // Fila 3: Ubicación (Pin azul)
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 13.5,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              job.address ?? 'Lima',
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11.5,
+                                color: Color(0xFF64748B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+
+                      // Fila 4: Hora (Reloj gris)
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time_rounded,
+                            size: 13.5,
+                            color: Color(0xFF94A3B8),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              timeFormatted,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11.5,
+                                color: Color(0xFF64748B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Fila 5: Tag de categoría azul + Bookmark
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEBF3FF),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              job.categoryName,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              ref.read(favoritesProvider.notifier).toggle(job.id);
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: Padding(
+                              padding: const EdgeInsets.all(2.0),
+                              child: Icon(
+                                isFav
+                                    ? Icons.bookmark_rounded
+                                    : Icons.bookmark_border_rounded,
+                                size: 19,
+                                color: isFav
+                                    ? AppColors.primary
+                                    : const Color(0xFF94A3B8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
