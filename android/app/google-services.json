@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "320726381262",
+    "project_id": "laboraya-produccion",
+    "storage_bucket": "laboraya-produccion.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:320726381262:android:df25f79b3464803c6d169f",
+        "android_client_info": {
+          "package_name": "com.laboraya.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCh05y0YA_CLYv3kDUcJ2V9u6EBu1xiQII"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
