@@ -54,6 +54,7 @@ class JobDetailPage extends ConsumerWidget {
           );
         }
 
+        final profile = ref.watch(profileProvider).value;
         final isFav = ref.watch(favoritesProvider).contains(job.id);
         final hasApplied = ref
             .watch(applicationsProvider)
