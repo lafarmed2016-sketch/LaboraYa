@@ -57,6 +57,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 onPressed: () async {
                   Navigator.pop(ctx);
                   await ref.read(authServiceProvider).logout();
+                  ref.invalidate(profileProvider);
+                  ref.invalidate(jobsProvider);
+                  ref.invalidate(notificationsProvider);
+                  ref.invalidate(conversationsProvider);
                   if (mounted) context.go('/welcome');
                 },
                 style: ElevatedButton.styleFrom(

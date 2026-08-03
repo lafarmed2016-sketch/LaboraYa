@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/services/auth_service.dart';
+import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
+import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:laboraya_app/features/chat/presentation/providers/chat_provider.dart';
 
 // ─── Paleta del diseño ────────────────────────────────────────────────────────
 const _kPrimary   = Color(0xFF4F5BD5); // azul-violeta del botón Login
@@ -72,6 +76,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
           .login(email: _emailCtrl.text.trim(), password: _passCtrl.text);
       if (!mounted) return;
       if (ok) {
+        ref.invalidate(profileProvider);
+        ref.invalidate(jobsProvider);
+        ref.invalidate(notificationsProvider);
+        ref.invalidate(conversationsProvider);
         context.go('/');
       } else {
         setState(() {

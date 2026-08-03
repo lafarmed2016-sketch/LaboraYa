@@ -267,7 +267,14 @@ class JobDetailPage extends ConsumerWidget {
             job: job,
             hasApplied: hasApplied,
             onApply: () => _showApplySheet(context, ref, job),
-            onChat: () => context.push('/chat/new_${job.publisherId}'),
+            onChat: () => context.push(
+              '/chat/new_${job.publisherId}',
+              extra: {
+                'name': job.publisherName,
+                'avatar': job.publisherAvatar,
+                'participantId': job.publisherId,
+              },
+            ),
           ),
         );
       },
@@ -893,24 +900,34 @@ class _PublisherCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 3),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.star_rounded,
-                    size: 14,
-                    color: AppColors.star,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    '${(job.publisherRating ?? 4.5).toStringAsFixed(1)} · ${job.publisherReviews ?? 0} reseñas',
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+              if (job.publisherReviews != null && job.publisherReviews! > 0)
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.star_rounded,
+                      size: 14,
+                      color: AppColors.star,
                     ),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${(job.publisherRating ?? 5.0).toStringAsFixed(1)} · ${job.publisherReviews} reseñas',
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                const Text(
+                  'Publicador nuevo · Sin reseñas aún',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11.5,
+                    color: AppColors.textHint,
                   ),
-                ],
-              ),
+                ),
             ],
           ),
         ),

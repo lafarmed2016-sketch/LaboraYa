@@ -101,6 +101,9 @@ class _Summary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (reviews.isEmpty) {
+      return const _SummaryContent(avg: 0.0, total: 0);
+    }
     final avg =
         reviews.fold<double>(0, (s, r) => s + (r.rating as double)) /
         reviews.length;

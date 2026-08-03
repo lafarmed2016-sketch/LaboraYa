@@ -60,8 +60,11 @@ class _HomePageState extends ConsumerState<HomePage> {
       backgroundColor: AppColors.background,
       body: RefreshIndicator(
         color: AppColors.primary,
-        onRefresh: () =>
-            ref.read(jobsProvider.notifier).loadJobs(refresh: true),
+        onRefresh: () async {
+          ref.invalidate(profileProvider);
+          ref.invalidate(notificationsProvider);
+          await ref.read(jobsProvider.notifier).loadJobs(refresh: true);
+        },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [

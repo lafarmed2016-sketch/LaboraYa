@@ -62,17 +62,25 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
         u['id'] != null ||
         u['usuarioId'] != null ||
         u['nombres'] != null) {
-      final names = (u['nombres'] ?? u['firstName'] ?? '').toString();
-      final lastnames = (u['apellidos'] ?? u['lastName'] ?? '').toString();
+      final names = (u['nombres'] ?? u['firstName'] ?? '').toString().trim();
+      final lastnames = (u['apellidos'] ?? u['lastName'] ?? '').toString().trim();
       final localAvatarPath = await storage.getLocalAvatarPath();
+      final savedUsername = await storage.getUsername();
+
+      String displayName = names;
+      if (displayName.isEmpty) {
+        displayName = (savedUsername != null && savedUsername.isNotEmpty)
+            ? savedUsername
+            : (u['usuario'] ?? u['username'] ?? 'Usuario').toString();
+      }
 
       return UserProfile(
         id: (u['usuarioId'] ?? u['id'] ?? '1').toString(),
         email: (u['correo'] ?? u['email'] ?? '').toString(),
         phone: (u['telefono'] ?? u['phone'])?.toString(),
-        firstName: names.isNotEmpty ? names : 'Usuario',
+        firstName: displayName,
         lastName: lastnames,
-        avatar: localAvatarPath ?? u['fotoUrl'] ?? u['avatar'],
+        avatar: localAvatarPath ?? u['imagenPerfilUrl'] ?? u['fotoUrl'] ?? u['avatar'],
         role: (u['role'] ?? 'USER').toString(),
         userType: (u['tipoUsuario'] ?? u['userType'] ?? 'BOTH')
             .toString()

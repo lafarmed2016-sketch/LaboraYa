@@ -82,8 +82,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/chat/:id',
-        builder: (_, state) =>
-            ChatPage(conversationId: state.pathParameters['id']!),
+        builder: (_, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return ChatPage(
+            conversationId: state.pathParameters['id']!,
+            participantName: extra?['name']?.toString() ?? state.uri.queryParameters['name'],
+            participantAvatar: extra?['avatar']?.toString() ?? state.uri.queryParameters['avatar'],
+            participantId: extra?['participantId']?.toString() ?? state.uri.queryParameters['participantId'],
+          );
+        },
       ),
       GoRoute(
         path: '/notifications',

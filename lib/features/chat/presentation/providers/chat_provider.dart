@@ -87,20 +87,54 @@ class ChatNotifier extends StateNotifier<Map<String, List<ChatMessage>>> {
     return state[conversationId] ?? [];
   }
 
-  Future<void> sendMessage(String conversationId, String text) async {
+  Future<String?> getOrCreateConversation(int otherUserId, {int? jobId}) async {
     try {
-      final intConvId = int.tryParse(conversationId) ?? 1;
+      final response = await _apiClient.post(
+        ApiConstants.chatCreate,
+        data: {
+          'OtroUsuarioId': otherUserId,
+          'TrabajoId': jobId,
+        },
+      );
+      final data = response.data;
+      if (data != null &&
+          (data['codigoRespuesta'] == '0' || data['success'] == true)) {
+        final d = data['datos'] ?? data['data'] ?? data;
+        final convId = (d['conversacionId'] ?? d['id'] ?? '').toString();
+        if (convId.isNotEmpty) return convId;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> sendMessage(String conversationId, String text, {String? participantId}) async {
+    try {
+      String targetConvId = conversationId;
+      if (conversationId.startsWith('new_')) {
+        final otherId = int.tryParse(participantId ?? conversationId.replaceFirst('new_', ''));
+        if (otherId != null) {
+          final realId = await getOrCreateConversation(otherId);
+          if (realId != null && realId.isNotEmpty) {
+            targetConvId = realId;
+          }
+        }
+      }
+
+      final intConvId = int.tryParse(targetConvId) ?? 1;
       await _apiClient.post(
         '${ApiConstants.chats}/Enviar',
         data: {
           'ConversacionId': intConvId,
           'Contenido': text,
           'TipoMensaje': 'TEXTO',
-          'conversacionId': conversationId,
+          'conversacionId': targetConvId,
           'content': text,
         },
       );
-      await getMessages(conversationId);
+      await getMessages(targetConvId);
+      if (targetConvId != conversationId) {
+        state = {...state, conversationId: state[targetConvId] ?? []};
+      }
     } catch (_) {}
   }
 }

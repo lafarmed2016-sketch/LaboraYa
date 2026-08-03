@@ -9,7 +9,17 @@ import 'package:laboraya_app/features/chat/presentation/providers/chat_provider.
 
 class ChatPage extends ConsumerStatefulWidget {
   final String conversationId;
-  const ChatPage({super.key, required this.conversationId});
+  final String? participantName;
+  final String? participantAvatar;
+  final String? participantId;
+
+  const ChatPage({
+    super.key,
+    required this.conversationId,
+    this.participantName,
+    this.participantAvatar,
+    this.participantId,
+  });
 
   @override
   ConsumerState<ChatPage> createState() => _ChatPageState();
@@ -27,7 +37,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       () => setState(() => _hasText = _msgCtrl.text.trim().isNotEmpty),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(chatProvider.notifier).getMessages(widget.conversationId);
+      if (!widget.conversationId.startsWith('new_')) {
+        ref.read(chatProvider.notifier).getMessages(widget.conversationId);
+      }
     });
   }
 
@@ -41,7 +53,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   void _send() {
     final text = _msgCtrl.text.trim();
     if (text.isEmpty) return;
-    ref.read(chatProvider.notifier).sendMessage(widget.conversationId, text);
+    ref.read(chatProvider.notifier).sendMessage(
+      widget.conversationId,
+      text,
+      participantId: widget.participantId,
+    );
     _msgCtrl.clear();
     _scrollToBottom();
   }
@@ -133,8 +149,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, ConversationData? convo) {
-    final titleName = convo?.participantName ?? 'Contacto';
+    final titleName = (widget.participantName != null && widget.participantName!.isNotEmpty)
+        ? widget.participantName!
+        : (convo?.participantName ?? 'Contacto');
     final initial = titleName.isNotEmpty ? titleName[0].toUpperCase() : 'U';
+    final avatarUrl = widget.participantAvatar ?? convo?.participantAvatar;
     final isOnline = convo?.isOnline ?? false;
 
     return AppBar(
@@ -170,15 +189,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               CircleAvatar(
                 radius: 18,
                 backgroundColor: AppColors.primaryLight,
-                child: Text(
-                  initial,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
+                backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                    ? NetworkImage(avatarUrl)
+                    : null,
+                child: (avatarUrl == null || avatarUrl.isEmpty)
+                    ? Text(
+                        initial,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                          fontFamily: 'Poppins',
+                        ),
+                      )
+                    : null,
               ),
               if (isOnline)
                 Positioned(

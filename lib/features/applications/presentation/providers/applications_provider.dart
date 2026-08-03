@@ -7,6 +7,9 @@ class ApplicationData {
   final String jobId;
   final String jobTitle;
   final String employerName;
+  final String? workerId;
+  final String? workerName;
+  final String? workerAvatar;
   final String status;
   final double proposedBudget;
   final String message;
@@ -18,6 +21,9 @@ class ApplicationData {
     required this.jobId,
     required this.jobTitle,
     required this.employerName,
+    this.workerId,
+    this.workerName,
+    this.workerAvatar,
     this.status = 'PENDIENTE',
     required this.proposedBudget,
     required this.message,
@@ -70,6 +76,9 @@ class ApplicationsNotifier extends StateNotifier<List<ApplicationData>> {
                 jobTitle: (a['title'] ?? a['trabajoTitulo'] ?? 'Trabajo')
                     .toString(),
                 employerName: (a['employerName'] ?? a['empleadorNombre'] ?? a['trabajadorNombre'] ?? 'Usuario').toString(),
+                workerId: (a['workerId'] ?? a['trabajadorId'])?.toString(),
+                workerName: (a['workerName'] ?? a['trabajadorNombre'])?.toString(),
+                workerAvatar: (a['workerAvatar'] ?? a['trabajadorFoto'])?.toString(),
                 status: (a['status'] ?? a['estado'] ?? 'PENDIENTE').toString(),
                 proposedBudget: ((a['proposedBudget'] ?? a['montoPropuesto'] ?? a['precioPropuesto'] ?? 0) as num).toDouble(),
                 message: (a['message'] ?? a['mensaje'] ?? a['cartaPresentacion'] ?? '').toString(),

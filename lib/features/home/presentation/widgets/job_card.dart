@@ -277,39 +277,45 @@ class _MainCard extends StatelessWidget {
                                   Icons.verified_rounded,
                                   size: 14,
                                   color: AppColors.primary,
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.star_rounded,
-                                  size: 12,
-                                  color: AppColors.star,
-                                ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  job.publisherRating != null
-                                      ? job.publisherRating!.toStringAsFixed(1)
-                                      : '4.8',
-                                  style: const TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
+                            if (job.publisherReviews != null && job.publisherReviews! > 0)
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    size: 12,
+                                    color: AppColors.star,
                                   ),
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  '(${job.publisherReviews ?? 0})',
-                                  style: const TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 10,
-                                    color: AppColors.textSecondary,
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    (job.publisherRating ?? 5.0).toStringAsFixed(1),
+                                    style: const TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
                                   ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    '(${job.publisherReviews})',
+                                    style: const TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 10,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else
+                              const Text(
+                                'Nuevo publicador',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textHint,
                                 ),
-                              ],
-                            ),
+                              ),
                           ],
                         ),
                       ),

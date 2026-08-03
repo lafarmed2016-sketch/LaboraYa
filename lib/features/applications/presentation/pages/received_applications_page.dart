@@ -251,7 +251,14 @@ class _AppCardState extends ConsumerState<_AppCard> {
                 children: [
                   // Chatear
                   GestureDetector(
-                    onTap: () => context.push('/chat/${app.id}'),
+                    onTap: () => context.push(
+                      '/chat/new_${app.workerId ?? app.id}',
+                      extra: {
+                        'name': app.workerName ?? app.employerName,
+                        'avatar': app.workerAvatar,
+                        'participantId': app.workerId ?? app.id,
+                      },
+                    ),
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(

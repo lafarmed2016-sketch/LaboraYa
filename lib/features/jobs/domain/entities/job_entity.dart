@@ -174,11 +174,12 @@ class JobEntity {
     final pubId =
         (publisher?['id'] ?? json['publisherId'] ?? json['empleadorId'] ?? '1')
             .toString();
-    final pubName =
+    final rawPubName =
         (json['empleadorNombre'] ??
                 '${publisher?['firstName'] ?? ''} ${publisher?['lastName'] ?? ''}'
                     .trim())
             .toString();
+    final pubName = formatPrivacyName(rawPubName);
     final pubAvatar = json['empleadorAvatar'] ?? publisher?['avatar'];
     final pubRating =
         (json['empleadorCalificacion'] ?? json['publisherRating'] as num?)
@@ -230,5 +231,28 @@ class JobEntity {
           : DateTime.now(),
       isUrgent: json['isUrgent'] == true || json['urgente'] == true,
     );
+  }
+
+  static String formatPrivacyName(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return 'Empleador';
+    final parts = raw.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return 'Empleador';
+    
+    String cap(String s) => s.isEmpty ? '' : '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';
+    
+    final firstName = cap(parts[0]);
+    if (parts.length == 1) return firstName;
+
+    String lastNameInitial = '';
+    if (parts.length >= 4) {
+      lastNameInitial = parts[2][0].toUpperCase();
+    } else if (parts.length >= 2) {
+      lastNameInitial = parts[1][0].toUpperCase();
+    }
+
+    if (lastNameInitial.isNotEmpty) {
+      return '$firstName $lastNameInitial.';
+    }
+    return firstName;
   }
 }
