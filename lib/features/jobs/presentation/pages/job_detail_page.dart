@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
-import 'package:laboraya_app/core/utils/job_images.dart';
 import 'package:laboraya_app/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:laboraya_app/features/applications/presentation/providers/applications_provider.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
+import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 // ─── JobDetailPage ────────────────────────────────────────────────────────────
@@ -266,6 +266,7 @@ class JobDetailPage extends ConsumerWidget {
           bottomNavigationBar: _JobFooter(
             job: job,
             hasApplied: hasApplied,
+            isMyJob: job.isMine(myId: profile?.id, myName: profile?.fullName),
             onApply: () => _showApplySheet(context, ref, job),
             onChat: () => context.push(
               '/chat/new_${job.publisherId}',
@@ -571,7 +572,6 @@ class _JobGalleryState extends State<_JobGallery> {
   @override
   Widget build(BuildContext context) {
     final hasImages = widget.images.isNotEmpty;
-    final fallback = JobImages.getImageForJob(widget.category, widget.title);
 
     return SizedBox(
       height: 260,
@@ -589,19 +589,19 @@ class _JobGalleryState extends State<_JobGallery> {
                     File(imgPath),
                     fit: BoxFit.cover,
                     width: double.infinity,
-                    errorBuilder: (_, __, ___) => _FallbackImage(asset: fallback),
+                    errorBuilder: (_, __, ___) => _CategoryBannerPlaceholder(category: widget.category),
                   );
                 }
                 return Image.network(
                   imgPath,
                   fit: BoxFit.cover,
                   width: double.infinity,
-                  errorBuilder: (_, __, ___) => _FallbackImage(asset: fallback),
+                  errorBuilder: (_, __, ___) => _CategoryBannerPlaceholder(category: widget.category),
                 );
               },
             )
           else
-            _FallbackImage(asset: fallback),
+            _CategoryBannerPlaceholder(category: widget.category),
 
           // Degradado superior
           Positioned(
@@ -680,23 +680,55 @@ class _JobGalleryState extends State<_JobGallery> {
   }
 }
 
-class _FallbackImage extends StatelessWidget {
-  final String asset;
-  const _FallbackImage({required this.asset});
+class _CategoryBannerPlaceholder extends StatelessWidget {
+  final String category;
+  const _CategoryBannerPlaceholder({required this.category});
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      asset,
-      fit: BoxFit.cover,
+    return Container(
       width: double.infinity,
       height: 260,
-      errorBuilder: (_, __, ___) => Container(
-        color: AppColors.primaryLight,
-        child: const Icon(
-          Icons.work_rounded,
-          color: AppColors.primary,
-          size: 56,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF1E3A8A),
+            Color(0xFF3B82F6),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.work_outline_rounded,
+              color: Colors.white70,
+              size: 54,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              category,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Publicación sin imágenes adjuntas',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                color: Colors.white60,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -708,12 +740,14 @@ class _FallbackImage extends StatelessWidget {
 class _JobFooter extends StatelessWidget {
   final dynamic job;
   final bool hasApplied;
+  final bool isMyJob;
   final VoidCallback onApply;
   final VoidCallback onChat;
 
   const _JobFooter({
     required this.job,
     required this.hasApplied,
+    this.isMyJob = false,
     required this.onApply,
     required this.onChat,
   });
@@ -758,58 +792,88 @@ class _JobFooter extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 16),
-          // Botón chat
-          SizedBox(
-            height: 50,
-            child: OutlinedButton.icon(
-              onPressed: onChat,
-              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
-              label: const Text(
-                'Chat',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(
+          if (isMyJob)
+            Expanded(
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                alignment: Alignment.center,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.person_pin_rounded, color: AppColors.primary, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Tu publicación',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Botón postular
-          Expanded(
-            child: SizedBox(
+            )
+          else ...[
+            // Botón chat
+            SizedBox(
               height: 50,
-              child: ElevatedButton(
-                onPressed: hasApplied ? null : onApply,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: hasApplied
-                      ? AppColors.success
-                      : AppColors.primary,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColors.success,
-                  disabledForegroundColor: Colors.white,
-                  elevation: 0,
+              child: OutlinedButton.icon(
+                onPressed: onChat,
+                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
+                label: const Text(
+                  'Chat',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary, width: 1.5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: Text(
-                  hasApplied ? '✓ Postulado' : 'Postularme',
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Botón postular
+            Expanded(
+              child: SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: hasApplied ? null : onApply,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: hasApplied
+                        ? AppColors.success
+                        : AppColors.primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppColors.success,
+                    disabledForegroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    hasApplied ? '✓ Postulado' : 'Postularme',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

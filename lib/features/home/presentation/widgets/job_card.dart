@@ -1,6 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
-import 'package:laboraya_app/core/utils/job_images.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -33,13 +33,66 @@ class _MainCard extends StatelessWidget {
   final VoidCallback? onTap;
   const _MainCard({required this.job, this.onTap});
 
+  Widget _buildImageWidget(String path, Color catColor) {
+    if (path.startsWith('http')) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildCategoryBanner(catColor),
+      );
+    } else {
+      return Image.file(
+        File(path),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildCategoryBanner(catColor),
+      );
+    }
+  }
+
+  Widget _buildCategoryBanner(Color catColor) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            catColor.withValues(alpha: 0.18),
+            catColor.withValues(alpha: 0.08),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _categoryIcon(job.categoryName),
+              color: catColor,
+              size: 42,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              job.categoryName,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: catColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final timeStr = job.publishedAt != null
         ? timeago.format(job.publishedAt!, locale: 'es')
         : '';
-    final imgPath = JobImages.getImageForJob(job.categoryName, job.title);
     final catColor = _categoryColor(job.categoryName);
+    final hasRealImage = job.images.isNotEmpty;
 
     return GestureDetector(
       onTap: onTap,
@@ -59,7 +112,7 @@ class _MainCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Imagen 16:9 ────────────────────────────────────────
+            // ── Imagen / Banner 16:9 ────────────────────────────────────────
             AspectRatio(
               aspectRatio: 16 / 9,
               child: ClipRRect(
@@ -69,35 +122,9 @@ class _MainCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.asset(
-                      imgPath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: catColor.withValues(alpha: 0.1),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _categoryIcon(job.categoryName),
-                                color: catColor,
-                                size: 42,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                job.categoryName,
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: catColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    hasRealImage
+                        ? _buildImageWidget(job.images.first, catColor)
+                        : _buildCategoryBanner(catColor),
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -277,6 +304,9 @@ class _MainCard extends StatelessWidget {
                                   Icons.verified_rounded,
                                   size: 14,
                                   color: AppColors.primary,
+                                ),
+                              ],
+                            ),
                             if (job.publisherReviews != null && job.publisherReviews! > 0)
                               Row(
                                 children: [
@@ -361,10 +391,48 @@ class _UrgentCard extends StatelessWidget {
   final VoidCallback? onTap;
   const _UrgentCard({required this.job, this.onTap});
 
+  Widget _buildImageWidget(String path, Color catColor) {
+    if (path.startsWith('http')) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildCategoryBanner(catColor),
+      );
+    } else {
+      return Image.file(
+        File(path),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildCategoryBanner(catColor),
+      );
+    }
+  }
+
+  Widget _buildCategoryBanner(Color catColor) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            catColor.withValues(alpha: 0.18),
+            catColor.withValues(alpha: 0.08),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          _categoryIcon(job.categoryName),
+          color: catColor,
+          size: 36,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final imgPath = JobImages.getImageForJob(job.categoryName, job.title);
     final catColor = _categoryColor(job.categoryName);
+    final hasRealImage = job.images.isNotEmpty;
 
     return GestureDetector(
       onTap: onTap,
@@ -396,20 +464,9 @@ class _UrgentCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.asset(
-                      imgPath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: catColor.withValues(alpha: 0.1),
-                        child: Center(
-                          child: Icon(
-                            _categoryIcon(job.categoryName),
-                            color: catColor,
-                            size: 36,
-                          ),
-                        ),
-                      ),
-                    ),
+                    hasRealImage
+                        ? _buildImageWidget(job.images.first, catColor)
+                        : _buildCategoryBanner(catColor),
                     Positioned(
                       bottom: 0,
                       left: 0,

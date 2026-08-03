@@ -150,6 +150,28 @@ class JobEntity {
       ? 'Trabajador provee materiales'
       : 'A coordinar';
 
+  bool isMine({String? myId, String? myName}) {
+    if (publisherId == 'user_current') return true;
+    if (myId != null && myId.isNotEmpty && publisherId.toString() == myId.toString()) {
+      return true;
+    }
+    if (myName != null && myName.trim().isNotEmpty) {
+      final cleanMy = myName.trim().toLowerCase();
+      final cleanPub = publisherName.trim().toLowerCase();
+      if (cleanPub == cleanMy || cleanPub == 'tú' || cleanPub == 'tu') {
+        return true;
+      }
+      final myParts = cleanMy.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+      if (myParts.length >= 2) {
+        final expectedShort = '${myParts[0]} ${myParts[1][0]}.';
+        if (cleanPub == expectedShort.toLowerCase()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   factory JobEntity.fromJson(Map<String, dynamic> json) {
     final publisher = json['publisher'] as Map<String, dynamic>?;
     final category = json['category'] as Map<String, dynamic>?;

@@ -35,7 +35,9 @@ class _MyJobsPageState extends ConsumerState<MyJobsPage>
     final jobs = ref.watch(jobsProvider).jobs;
     final profile = ref.watch(profileProvider).value;
     final myId = profile?.id;
-    final myJobs = jobs.where((j) => j.publisherId == myId || j.publisherId == 'user_current').toList();
+    final myJobs = jobs
+        .where((j) => j.isMine(myId: myId, myName: profile?.fullName))
+        .toList();
 
     final active = myJobs
         .where(

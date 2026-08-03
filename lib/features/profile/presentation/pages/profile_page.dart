@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/services/auth_service.dart';
 import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
+import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:laboraya_app/features/chat/presentation/providers/chat_provider.dart';
 
 // Fondo azul pastel igual al mockup
 const _kBgTop    = Color(0xFFE8F0FE);

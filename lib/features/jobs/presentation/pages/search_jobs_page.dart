@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/services/location_service.dart';
-import 'package:laboraya_app/features/home/presentation/widgets/job_card.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:laboraya_app/features/map/presentation/widgets/osm_map_widget.dart';
+import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
 
 class SearchJobsPage extends ConsumerStatefulWidget {
   const SearchJobsPage({super.key});
@@ -300,6 +300,10 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
   @override
   Widget build(BuildContext context) {
     final jobsState = ref.watch(jobsProvider);
+    final profile   = ref.watch(profileProvider).value;
+    final otherJobs = jobsState.jobs
+        .where((j) => !j.isMine(myId: profile?.id, myName: profile?.fullName))
+        .toList();
     final top       = MediaQuery.of(context).padding.top;
     final screenH   = MediaQuery.of(context).size.height;
 
@@ -315,7 +319,7 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                 longitude: -77.0318,
                 zoom: 13,
                 height: screenH,
-                markers: jobsState.jobs
+                markers: otherJobs
                     .where((j) => j.latitude != null && j.longitude != null)
                     .map((j) => MapJobMarker(
                           id: j.id,
@@ -364,6 +368,7 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
             builder: (ctx, scrollCtrl) => _BottomPanel(
               scrollController: scrollCtrl,
               jobsState: jobsState,
+              jobs: otherJobs,
               onJobTap: (id) => context.push('/jobs/$id'),
               onRefresh: () =>
                   ref.read(jobsProvider.notifier).loadJobs(refresh: true),
@@ -570,19 +575,20 @@ class _SearchBar extends StatelessWidget {
 class _BottomPanel extends StatelessWidget {
   final ScrollController scrollController;
   final JobsState jobsState;
+  final List<JobEntity> jobs;
   final ValueChanged<String> onJobTap;
   final Future<void> Function() onRefresh;
 
   const _BottomPanel({
     required this.scrollController,
     required this.jobsState,
+    required this.jobs,
     required this.onJobTap,
     required this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
-    final jobs = jobsState.jobs;
 
     return Container(
       decoration: const BoxDecoration(
@@ -683,15 +689,15 @@ class _BottomPanel extends StatelessWidget {
                 ),
               ),
 
-            // ── Lista de trabajos ──────────────────────────────
+            // ── Lista de trabajos compacta ─────────────────────
             if (jobs.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (ctx, i) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: JobCard(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _SearchJobTile(
                         job: jobs[i],
                         onTap: () => onJobTap(jobs[i].id),
                       ),
@@ -700,6 +706,252 @@ class _BottomPanel extends StatelessWidget {
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Tarjeta compacta para el buscador y mapa (Sin fotos falsas) ─────────────
+
+class _SearchJobTile extends StatelessWidget {
+  final JobEntity job;
+  final VoidCallback onTap;
+
+  const _SearchJobTile({required this.job, required this.onTap});
+
+  Color _categoryColor(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'plomería':
+        return const Color(0xFF0D6EFD);
+      case 'electricidad':
+        return const Color(0xFFD97706);
+      case 'pintura':
+        return const Color(0xFF7C3AED);
+      case 'carpintería':
+        return const Color(0xFF92400E);
+      case 'albañilería':
+        return const Color(0xFFEA580C);
+      case 'limpieza':
+        return const Color(0xFF059669);
+      case 'cerrajería':
+        return const Color(0xFF4B5563);
+      case 'mecánica':
+        return const Color(0xFF1D4ED8);
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  IconData _categoryIcon(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'plomería':
+        return Icons.plumbing_rounded;
+      case 'electricidad':
+        return Icons.electrical_services_rounded;
+      case 'pintura':
+        return Icons.format_paint_rounded;
+      case 'carpintería':
+        return Icons.carpenter_rounded;
+      case 'albañilería':
+        return Icons.construction_rounded;
+      case 'limpieza':
+        return Icons.cleaning_services_rounded;
+      case 'cerrajería':
+        return Icons.lock_rounded;
+      case 'mecánica':
+        return Icons.build_rounded;
+      default:
+        return Icons.work_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final catColor = _categoryColor(job.categoryName);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border, width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Ícono de categoría limpio
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: catColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                _categoryIcon(job.categoryName),
+                color: catColor,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Detalles del trabajo
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Badges (Categoría + Urgente)
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: catColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          job.categoryName,
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: catColor,
+                          ),
+                        ),
+                      ),
+                      if (job.isUrgent) ...[
+                        const SizedBox(width: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFECEB),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.bolt, size: 10, color: Color(0xFFE53935)),
+                              SizedBox(width: 1),
+                              Text(
+                                'URGENTE',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFE53935),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  // Título
+                  Text(
+                    job.title,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  // Ubicación y Publicador privado
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined,
+                          size: 12, color: AppColors.textSecondary),
+                      const SizedBox(width: 2),
+                      Flexible(
+                        child: Text(
+                          job.address ?? 'Lima',
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Container(
+                        width: 3,
+                        height: 3,
+                        margin: const EdgeInsets.symmetric(horizontal: 5),
+                        decoration: const BoxDecoration(
+                          color: AppColors.textHint,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Text(
+                        job.publisherName,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Presupuesto y Modalidad
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  job.formattedBudget,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: AppColors.inputBg,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.border, width: 0.6),
+                  ),
+                  child: Text(
+                    job.modalityLabel,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

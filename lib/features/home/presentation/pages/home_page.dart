@@ -7,6 +7,7 @@ import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/widgets/app_empty_state.dart';
 import 'package:laboraya_app/features/home/presentation/widgets/job_card.dart';
 import 'package:laboraya_app/features/home/presentation/widgets/home_shimmer.dart';
+import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
@@ -40,9 +41,16 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   String _selectedCategory = 'Todos';
 
-  List<dynamic> _filter(List<dynamic> jobs) {
-    if (_selectedCategory == 'Todos') return jobs;
-    return jobs
+  List<dynamic> _filter(List<dynamic> jobs, String? myId, String? myName) {
+    var list = jobs.where((j) {
+      if (j is JobEntity) {
+        return !j.isMine(myId: myId, myName: myName);
+      }
+      return true;
+    }).toList();
+
+    if (_selectedCategory == 'Todos') return list;
+    return list
         .where(
           (j) => j.categoryName.toLowerCase().contains(
             _selectedCategory.toLowerCase(),
@@ -54,7 +62,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(jobsProvider);
-    final filtered = _filter(state.jobs);
+    final profile = ref.watch(profileProvider).value;
+    final filtered = _filter(state.jobs, profile?.id, profile?.fullName);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -107,7 +116,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ref.read(jobsProvider.notifier).loadJobs(refresh: true),
                 ),
               ),
-            if (!state.isLoading && state.error == null && state.jobs.isEmpty)
+            if (!state.isLoading && state.error == null && filtered.isEmpty)
               const SliverFillRemaining(
                 child: AppEmptyState(
                   icon: Icons.work_outline_rounded,
