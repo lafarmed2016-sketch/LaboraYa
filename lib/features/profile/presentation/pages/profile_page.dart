@@ -5,15 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/services/auth_service.dart';
+import 'package:laboraya_app/core/storage/secure_storage.dart';
 import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:laboraya_app/features/chat/presentation/providers/chat_provider.dart';
 
-// Fondo azul pastel igual al mockup
-const _kBgTop    = Color(0xFFE8F0FE);
 const _kBgBottom = Color(0xFFF0F4FF);
-const _kBlob     = Color(0xFFBDD2FB);
 const _kNameColor = Color(0xFF1A237E);
 const _kSubColor  = Color(0xFF5C6BC0);
 
@@ -25,70 +23,69 @@ class ProfilePage extends ConsumerStatefulWidget {
 }
 
 class _ProfilePageState extends ConsumerState<ProfilePage> {
-
   void _showLogoutDialog() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 36, height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2))),
-            const Icon(Icons.logout_rounded, size: 40, color: AppColors.error),
-            const SizedBox(height: 12),
-            const Text('¿Cerrar sesión?', style: TextStyle(
-                fontFamily: 'Poppins', fontSize: 18,
-                fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            const SizedBox(height: 8),
-            const Text('¿Seguro que deseas salir de tu cuenta?',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Poppins', fontSize: 14,
-                    color: AppColors.textSecondary)),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity, height: 52,
-              child: ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  await ref.read(authServiceProvider).logout();
-                  ref.invalidate(profileProvider);
-                  ref.invalidate(jobsProvider);
-                  ref.invalidate(notificationsProvider);
-                  ref.invalidate(conversationsProvider);
-                  if (mounted) context.go('/welcome');
-                },
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.error, elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14))),
-                child: const Text('Cerrar sesión', style: TextStyle(
-                    fontFamily: 'Poppins', fontWeight: FontWeight.w700,
-                    fontSize: 15, color: Colors.white)),
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 36, height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2))),
+              const Icon(Icons.logout_rounded, size: 40, color: AppColors.error),
+              const SizedBox(height: 12),
+              const Text('¿Cerrar sesión?', style: TextStyle(
+                  fontFamily: 'Poppins', fontSize: 18,
+                  fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              const SizedBox(height: 8),
+              const Text('¿Seguro que deseas salir de tu cuenta?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontFamily: 'Poppins', fontSize: 14,
+                      color: AppColors.textSecondary)),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity, height: 52,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await ref.read(authServiceProvider).logout();
+                    ref.invalidate(profileProvider);
+                    ref.invalidate(jobsProvider);
+                    ref.invalidate(notificationsProvider);
+                    ref.invalidate(conversationsProvider);
+                    if (mounted) context.go('/welcome');
+                  },
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.error, elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14))),
+                  child: const Text('Cerrar sesión', style: TextStyle(
+                      fontFamily: 'Poppins', fontWeight: FontWeight.w700,
+                      fontSize: 15, color: Colors.white)),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity, height: 52,
-              child: TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: TextButton.styleFrom(shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: const BorderSide(color: AppColors.border))),
-                child: const Text('Cancelar', style: TextStyle(
-                    fontFamily: 'Poppins', fontWeight: FontWeight.w600,
-                    fontSize: 15, color: AppColors.textSecondary)),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity, height: 52,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: TextButton.styleFrom(shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: const BorderSide(color: AppColors.border))),
+                  child: const Text('Cancelar', style: TextStyle(
+                      fontFamily: 'Poppins', fontWeight: FontWeight.w600,
+                      fontSize: 15, color: AppColors.textSecondary)),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -96,6 +93,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<UserProfile?>>(profileProvider, (prev, next) {
+      if (next.hasValue && next.value == null) {
+        ref.read(secureStorageProvider).clearTokens();
+        if (mounted) context.go('/auth/login');
+      }
+    });
+
     final profileAsync = ref.watch(profileProvider);
     return Scaffold(
       backgroundColor: _kBgBottom,

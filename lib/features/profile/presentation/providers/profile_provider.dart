@@ -51,54 +51,59 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
   try {
     final apiClient = ref.read(apiClientProvider);
     final storage = ref.read(secureStorageProvider);
+    final token = await storage.getAccessToken();
+    if (token == null || token.isEmpty) return null;
+
     final response = await apiClient.get(ApiConstants.userProfile);
     final data = response.data;
     if (data == null) return null;
 
-    final isSuccess = data['codigoRespuesta'] == '0' || data['success'] == true;
-    final u = data['datos'] ?? data['data'] ?? data;
-
-    if (isSuccess ||
-        u['id'] != null ||
-        u['usuarioId'] != null ||
-        u['nombres'] != null) {
-      final names = (u['nombres'] ?? u['firstName'] ?? '').toString().trim();
-      final lastnames = (u['apellidos'] ?? u['lastName'] ?? '').toString().trim();
-      final localAvatarPath = await storage.getLocalAvatarPath();
-      final savedUsername = await storage.getUsername();
-
-      String displayName = names;
-      if (displayName.isEmpty) {
-        displayName = (savedUsername != null && savedUsername.isNotEmpty)
-            ? savedUsername
-            : (u['usuario'] ?? u['username'] ?? 'Usuario').toString();
-      }
-
-      return UserProfile(
-        id: (u['usuarioId'] ?? u['id'] ?? '1').toString(),
-        email: (u['correo'] ?? u['email'] ?? '').toString(),
-        phone: (u['telefono'] ?? u['phone'])?.toString(),
-        firstName: displayName,
-        lastName: lastnames,
-        avatar: localAvatarPath ?? u['imagenPerfilUrl'] ?? u['fotoUrl'] ?? u['avatar'],
-        role: (u['role'] ?? 'USER').toString(),
-        userType: (u['tipoUsuario'] ?? u['userType'] ?? 'BOTH')
-            .toString()
-            .toUpperCase(),
-        city: (u['distrito'] ?? u['provincia'] ?? u['departamento'] ?? u['ciudad'] ?? u['city'])?.toString(),
-        bio: (u['descripcion'] ?? u['bio'] ?? u['workerDescription'])
-            ?.toString(),
-        isVerified: u['esVerificado'] == true || u['emailVerified'] == true,
-        workerRating: (u['rating'] ?? u['workerRating']) != null
-            ? (u['rating'] ?? u['workerRating']).toDouble()
-            : null,
-        workerReviews: u['resenasCount'] ?? u['workerReviews'],
-        completedJobs: u['trabajosCompletadosCount'] ?? u['completedJobs'],
-        hourlyRate: u['precioHora'] != null
-            ? (u['precioHora']).toDouble()
-            : null,
-      );
+    if (data is Map && data['codigoRespuesta'] != null && data['codigoRespuesta'] != '0' && data['codigoRespuesta'] != 0) {
+      // Error de autenticación o usuario inexistente
+      return null;
     }
-  } catch (_) {}
-  return null;
+
+    final u = data is Map ? (data['datos'] ?? data['data'] ?? data) : null;
+    if (u == null || (u is Map && u.isEmpty)) return null;
+
+    final id = (u['usuarioId'] ?? u['id'])?.toString();
+    final names = (u['nombres'] ?? u['firstName'] ?? '').toString().trim();
+    final lastnames = (u['apellidos'] ?? u['lastName'] ?? '').toString().trim();
+    final localAvatarPath = await storage.getLocalAvatarPath();
+    final savedUsername = await storage.getUsername();
+
+    String displayName = names;
+    if (displayName.isEmpty) {
+      displayName = (savedUsername != null && savedUsername.isNotEmpty)
+          ? savedUsername
+          : (u['usuario'] ?? u['username'] ?? '').toString().trim();
+    }
+
+    // Si no hay ningún dato de identidad válido, el usuario no existe
+    if (id == null || id.isEmpty || (displayName.isEmpty && (u['correo'] == null || u['correo'].toString().isEmpty))) {
+      return null;
+    }
+
+    return UserProfile(
+      id: id,
+      email: (u['correo'] ?? u['email'] ?? '').toString(),
+      phone: (u['telefono'] ?? u['phone'])?.toString(),
+      firstName: displayName.isNotEmpty ? displayName : 'Usuario',
+      lastName: lastnames,
+      avatar: localAvatarPath ?? u['imagenPerfilUrl'] ?? u['fotoUrl'] ?? u['avatar'],
+      role: (u['role'] ?? 'USER').toString(),
+      userType: (u['tipoUsuario'] ?? u['userType'] ?? 'BOTH')
+          .toString()
+          .toUpperCase(),
+      city: (u['distrito'] ?? u['provincia'] ?? u['departamento'] ?? u['ciudad'] ?? u['city'])?.toString(),
+      bio: (u['descripcion'] ?? u['bio'] ?? u['workerDescription'])?.toString(),
+      isVerified: u['esVerificado'] == true || u['emailVerified'] == true,
+      workerRating: ((u['rating'] ?? u['workerRating']) as num?)?.toDouble(),
+      workerReviews: u['resenasCount'] ?? u['workerReviews'],
+      completedJobs: u['trabajosCompletadosCount'] ?? u['completedJobs'],
+      hourlyRate: (u['precioHora'] as num?)?.toDouble(),
+    );
+  } catch (_) {
+    return null;
+  }
 });

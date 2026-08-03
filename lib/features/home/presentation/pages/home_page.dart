@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
+import 'package:laboraya_app/core/storage/secure_storage.dart';
 import 'package:laboraya_app/core/widgets/app_empty_state.dart';
 import 'package:laboraya_app/features/home/presentation/widgets/job_card.dart';
 import 'package:laboraya_app/features/home/presentation/widgets/home_shimmer.dart';
@@ -31,6 +32,13 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<UserProfile?>>(profileProvider, (prev, next) {
+      if (next.hasValue && next.value == null) {
+        ref.read(secureStorageProvider).clearTokens();
+        if (mounted) context.go('/auth/login');
+      }
+    });
+
     final state = ref.watch(jobsProvider);
     final profile = ref.watch(profileProvider).value;
     final filtered = _filter(state.jobs, profile?.id, profile?.fullName);

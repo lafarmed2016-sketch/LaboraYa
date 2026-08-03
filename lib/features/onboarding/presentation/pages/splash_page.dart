@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/storage/secure_storage.dart';
+import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
@@ -72,8 +73,26 @@ class _SplashPageState extends ConsumerState<SplashPage>
     final storage = ref.read(secureStorageProvider);
     final hasToken = await storage.hasToken();
     if (!mounted) return;
+
     if (hasToken) {
-      context.go('/');
+      try {
+        // Validar si el usuario existe realmente en la base de datos SQL
+        final profile = await ref.read(profileProvider.future);
+        if (!mounted) return;
+        if (profile != null && profile.id.isNotEmpty && profile.id != '0') {
+          context.go('/');
+          return;
+        }
+      } catch (_) {}
+
+      // Si no existe el usuario en SQL o el token es inválido:
+      await storage.clearTokens();
+      if (!mounted) return;
+      if (!seenOnboarding) {
+        context.go('/welcome');
+      } else {
+        context.go('/auth/login');
+      }
     } else if (!seenOnboarding) {
       context.go('/welcome');
     } else {
