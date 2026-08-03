@@ -11,7 +11,7 @@ class AboutPage extends StatefulWidget {
 class _AboutPageState extends State<AboutPage> {
   String _version = '1.0.0';
   String _build = '1';
-  String _platform = 'Android';
+  final String _platform = 'Android';
 
   @override
   void initState() {

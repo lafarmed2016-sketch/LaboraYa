@@ -205,10 +205,12 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                         border: const OutlineInputBorder(),
                       ),
                       validator: (v) {
-                        if (v == null || v.isEmpty)
+                        if (v == null || v.isEmpty) {
                           return 'Ingresa la nueva contraseña';
-                        if (v.length < 6)
+                        }
+                        if (v.length < 6) {
                           return 'Debe tener al menos 6 caracteres';
+                        }
                         return null;
                       },
                     ),
@@ -240,10 +242,12 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                         border: const OutlineInputBorder(),
                       ),
                       validator: (v) {
-                        if (v == null || v.isEmpty)
+                        if (v == null || v.isEmpty) {
                           return 'Confirma tu nueva contraseña';
-                        if (v != _newController.text)
+                        }
+                        if (v != _newController.text) {
                           return 'Las contraseñas no coinciden';
+                        }
                         return null;
                       },
                     ),

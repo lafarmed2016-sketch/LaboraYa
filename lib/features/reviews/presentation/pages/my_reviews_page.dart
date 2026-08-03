@@ -111,11 +111,6 @@ class _Summary extends StatelessWidget {
   }
 }
 
-class _SummaryStatic extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => _SummaryContent(avg: 4.8, total: 32);
-}
-
 class _SummaryContent extends StatelessWidget {
   final double avg;
   final int total;
@@ -326,8 +321,10 @@ class _ReviewCard extends StatelessWidget {
       return 'Hace ${(diff.inDays / 30).floor()} mes${diff.inDays > 60 ? 'es' : ''}';
     if (diff.inDays > 0)
       return 'Hace ${diff.inDays} día${diff.inDays > 1 ? 's' : ''}';
-    if (diff.inHours > 0)
+    }
+    if (diff.inHours > 0) {
       return 'Hace ${diff.inHours} hora${diff.inHours > 1 ? 's' : ''}';
+    }
     return 'Hace un momento';
   }
 }

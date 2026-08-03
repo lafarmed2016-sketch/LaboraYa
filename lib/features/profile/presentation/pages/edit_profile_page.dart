@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -301,7 +300,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             ),
             onPressed: () async {
               if (await _onWillPop()) {
-                context.pop();
+                if (context.mounted) context.pop();
               }
             },
           ),
@@ -333,10 +332,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                           backgroundColor: AppColors.primaryLight,
                           backgroundImage: _avatarFile != null
                               ? FileImage(_avatarFile!)
-                              : (profile?.avatar != null
-                                  ? (profile!.avatar!.startsWith('/') || !profile!.avatar!.startsWith('http')
-                                      ? FileImage(File(profile!.avatar!)) as ImageProvider
-                                      : NetworkImage(profile!.avatar!) as ImageProvider)
+                              : (profile?.avatar != null && profile!.avatar.isNotEmpty
+                                  ? (profile.avatar.startsWith('/') || !profile.avatar.startsWith('http')
+                                      ? FileImage(File(profile.avatar)) as ImageProvider
+                                      : NetworkImage(profile.avatar) as ImageProvider)
                                   : null),
                           child: _avatarFile == null && profile?.avatar == null
                               ? const Icon(

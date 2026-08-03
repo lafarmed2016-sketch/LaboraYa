@@ -183,7 +183,7 @@ class _WelcomePageState extends State<WelcomePage>
                           child: ElevatedButton(
                             onPressed: () async {
                               await _markSeen();
-                              if (mounted) context.go('/auth/register');
+                              if (context.mounted) context.go('/auth/register');
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
@@ -209,7 +209,7 @@ class _WelcomePageState extends State<WelcomePage>
                           child: OutlinedButton(
                             onPressed: () async {
                               await _markSeen();
-                              if (mounted) context.go('/auth/login');
+                              if (context.mounted) context.go('/auth/login');
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,

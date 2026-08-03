@@ -39,7 +39,7 @@ class _NotificationSettingsPageState
               'promotions': _promotions,
             },
           );
-      if (mounted)
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Configuración guardada'),
@@ -47,14 +47,16 @@ class _NotificationSettingsPageState
             behavior: SnackBarBehavior.floating,
           ),
         );
+      }
     } catch (_) {
-      if (mounted)
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Guardado localmente'),
             behavior: SnackBarBehavior.floating,
           ),
         );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -280,7 +282,7 @@ class _Toggle extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: color,
+            activeThumbColor: color,
             trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
           ),
         ],
