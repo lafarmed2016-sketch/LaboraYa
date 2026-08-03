@@ -103,7 +103,7 @@ class SettingsPage extends ConsumerWidget {
               _SettingTile(
                 icon: Icons.help_outline_rounded,
                 title: 'Centro de ayuda',
-                onTap: () => context.push('/help'),
+                onTap: () => context.push('/help-center'),
               ),
               _SettingTile(
                 icon: Icons.description_outlined,
