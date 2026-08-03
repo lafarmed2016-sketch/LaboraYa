@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
-import 'package:laboraya_app/core/services/auth_service.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
+import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:laboraya_app/features/chat/presentation/providers/chat_provider.dart';
 
 // ─── RegisterPage — registro rápido en 1 pantalla ────────────────────────────
 // Solo pide lo mínimo: nombre, apellido, correo, contraseña, confirmar.
@@ -108,6 +112,52 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
       setState(() {
         _isLoading = false;
         _error = 'Ocurrió un error inesperado. Intenta de nuevo.';
+      });
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isLoading) return;
+    setState(() {
+      _error = null;
+      _isLoading = true;
+    });
+
+    try {
+      final googleSignIn = GoogleSignIn();
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      final ok = await ref.read(authServiceProvider).loginWithGoogleAccount(
+            email: account.email,
+            googleId: account.id,
+            displayName: account.displayName ?? account.email,
+          );
+
+      if (!mounted) return;
+      if (ok) {
+        ref.invalidate(profileProvider);
+        ref.invalidate(jobsProvider);
+        ref.invalidate(notificationsProvider);
+        ref.invalidate(conversationsProvider);
+        context.go('/');
+      } else {
+        setState(() {
+          _error = 'No se pudo iniciar sesión con Google.';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final raw = e.toString().replaceFirst('Exception: ', '').trim();
+      setState(() {
+        _error = raw.isNotEmpty
+            ? raw
+            : 'Error al conectar con Google. Verifica tu conexión.';
+        _isLoading = false;
       });
     }
   }
@@ -345,7 +395,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
                             iconAsset: 'assets/icons/gmail.png',
                             fallbackIcon: Icons.g_mobiledata,
                             fallbackColor: const Color(0xFFEA4335),
-                            onTap: () {},
+                            onTap: _handleGoogleSignIn,
                           ),
                         ),
                       ],

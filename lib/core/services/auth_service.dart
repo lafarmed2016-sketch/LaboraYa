@@ -13,6 +13,11 @@ final authServiceProvider = Provider<AuthService>((ref) {
 
 abstract class AuthService {
   Future<bool> login({required String email, required String password});
+  Future<bool> loginWithGoogleAccount({
+    required String email,
+    required String googleId,
+    required String displayName,
+  });
   Future<bool> register({
     required String firstName,
     required String lastName,
@@ -118,6 +123,34 @@ class RealAuthService implements AuthService {
     } catch (e) {
       if (e is Exception) rethrow;
       throw Exception('Error al iniciar sesión: $e');
+    }
+  }
+
+  @override
+  Future<bool> loginWithGoogleAccount({
+    required String email,
+    required String googleId,
+    required String displayName,
+  }) async {
+    final names = displayName.trim().split(' ');
+    final firstName = names.isNotEmpty ? names.first : 'Usuario';
+    final lastName = names.length > 1 ? names.sublist(1).join(' ') : 'Google';
+
+    try {
+      return await login(email: email, password: googleId);
+    } catch (_) {
+      try {
+        return await register(
+          firstName: firstName,
+          lastName: lastName,
+          email: email,
+          phone: '999999999',
+          password: googleId,
+          userType: 'Cliente',
+        );
+      } catch (e) {
+        rethrow;
+      }
     }
   }
 
