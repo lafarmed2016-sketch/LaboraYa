@@ -267,8 +267,22 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     final profileAsync = ref.watch(profileProvider);
     final profile = profileAsync.value;
 
-    // Pre-llenar campos cuando los datos llegan del servidor
     if (profile != null) _initFields(profile);
+
+    ImageProvider? avatarImageProvider;
+    if (_avatarFile != null) {
+      avatarImageProvider = FileImage(_avatarFile!);
+    } else {
+      final avatarUrl = profile?.avatar;
+      if (avatarUrl != null && avatarUrl.isNotEmpty) {
+        if (avatarUrl.startsWith('/') || !avatarUrl.startsWith('http')) {
+          avatarImageProvider = FileImage(File(avatarUrl));
+        } else {
+          avatarImageProvider = NetworkImage(avatarUrl);
+        }
+      }
+    }
+
     return PopScope(
       canPop: !_hasChanges,
       onPopInvokedWithResult: (didPop, _) async {
@@ -330,14 +344,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                         CircleAvatar(
                           radius: 46,
                           backgroundColor: AppColors.primaryLight,
-                          backgroundImage: _avatarFile != null
-                              ? FileImage(_avatarFile!)
-                              : (profile?.avatar != null && profile!.avatar.isNotEmpty
-                                  ? (profile.avatar.startsWith('/') || !profile.avatar.startsWith('http')
-                                      ? FileImage(File(profile.avatar)) as ImageProvider
-                                      : NetworkImage(profile.avatar) as ImageProvider)
-                                  : null),
-                          child: _avatarFile == null && profile?.avatar == null
+                          backgroundImage: avatarImageProvider,
+                          child: avatarImageProvider == null
                               ? const Icon(
                                   Icons.person_rounded,
                                   size: 46,

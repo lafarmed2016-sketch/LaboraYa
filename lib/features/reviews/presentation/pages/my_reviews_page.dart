@@ -317,9 +317,10 @@ class _ReviewCard extends StatelessWidget {
 
   String _timeAgo(DateTime date) {
     final diff = DateTime.now().difference(date);
-    if (diff.inDays > 30)
+    if (diff.inDays > 30) {
       return 'Hace ${(diff.inDays / 30).floor()} mes${diff.inDays > 60 ? 'es' : ''}';
-    if (diff.inDays > 0)
+    }
+    if (diff.inDays > 0) {
       return 'Hace ${diff.inDays} día${diff.inDays > 1 ? 's' : ''}';
     }
     if (diff.inHours > 0) {
