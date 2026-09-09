@@ -60,8 +60,8 @@ class OsmMapWidget extends StatelessWidget {
                     .map(
                       (m) => Marker(
                         point: LatLng(m.latitude, m.longitude),
-                        width: 46,
-                        height: 52,
+                        width: 44,
+                        height: 44,
                         child: GestureDetector(
                           onTap: m.onTap,
                           child: _MapPinBadge(
@@ -142,38 +142,24 @@ class _MapPinBadge extends StatelessWidget {
     final badgeColor = _getBadgeColor();
     final icon = _getCategoryIcon();
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
+    return Center(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Borde blanco sutil para contraste flotante
+          Icon(
+            icon,
+            size: 36,
+            color: Colors.white,
+          ),
+          // Ícono principal flotante
+          Icon(
+            icon,
+            size: 30,
             color: badgeColor,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
           ),
-          child: Center(
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-        ),
-        Icon(
-          Icons.arrow_drop_down_rounded,
-          color: badgeColor,
-          size: 16,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
