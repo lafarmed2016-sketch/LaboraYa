@@ -60,7 +60,7 @@ class OsmMapWidget extends StatelessWidget {
                     .map(
                       (m) => Marker(
                         point: LatLng(m.latitude, m.longitude),
-                        width: 44,
+                        width: 40,
                         height: 44,
                         child: GestureDetector(
                           onTap: m.onTap,
@@ -98,7 +98,7 @@ class _MapPinBadge extends StatelessWidget {
       return Icons.electrical_services_rounded;
     } else if (cat.contains('pintur')) {
       return Icons.format_paint_rounded;
-    } else if (cat.contains('carpint')) {
+    } else if (cat.contains('carpint') || cat.contains('serrucho')) {
       return Icons.carpenter_rounded;
     } else if (cat.contains('albañil') || cat.contains('construc') || cat.contains('obra') || cat.contains('lampa')) {
       return Icons.construction_rounded;
@@ -124,7 +124,7 @@ class _MapPinBadge extends StatelessWidget {
     } else if (cat.contains('pintur')) {
       return const Color(0xFF7C3AED);
     } else if (cat.contains('carpint')) {
-      return const Color(0xFF92400E);
+      return const Color(0xFF0284C7);
     } else if (cat.contains('albañil') || cat.contains('construc')) {
       return const Color(0xFFEA580C);
     } else if (cat.contains('limpiez')) {
@@ -134,7 +134,7 @@ class _MapPinBadge extends StatelessWidget {
     } else if (cat.contains('mecán')) {
       return const Color(0xFF1D4ED8);
     }
-    return const Color(0xFF246BCE);
+    return const Color(0xFF0284C7);
   }
 
   @override
@@ -142,24 +142,41 @@ class _MapPinBadge extends StatelessWidget {
     final badgeColor = _getBadgeColor();
     final icon = _getCategoryIcon();
 
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Borde blanco sutil para contraste flotante
-          Icon(
-            icon,
-            size: 36,
-            color: Colors.white,
-          ),
-          // Ícono principal flotante
-          Icon(
-            icon,
-            size: 30,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
             color: badgeColor,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x3D000000),
+                blurRadius: 6,
+                offset: Offset(0, 3),
+              ),
+            ],
           ),
-        ],
-      ),
+          child: Center(
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+        Transform.translate(
+          offset: const Offset(0, -3),
+          child: Icon(
+            Icons.arrow_drop_down_rounded,
+            color: badgeColor,
+            size: 16,
+          ),
+        ),
+      ],
     );
   }
 }
