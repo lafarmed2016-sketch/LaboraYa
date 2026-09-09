@@ -30,6 +30,7 @@ class JobEntity {
   final DateTime? publishedAt;
   final DateTime createdAt;
   final bool isUrgent;
+  final bool isPublisherVerified;
 
   const JobEntity({
     required this.id,
@@ -63,6 +64,7 @@ class JobEntity {
     this.publishedAt,
     required this.createdAt,
     this.isUrgent = false,
+    this.isPublisherVerified = false,
   });
 
   JobEntity copyWith({
@@ -281,6 +283,11 @@ class JobEntity {
           ? DateTime.tryParse((json['createdAt'] ?? json['CreatedAt']).toString()) ?? DateTime.now()
           : DateTime.now(),
       isUrgent: json['isUrgent'] == true || json['IsUrgent'] == true || json['urgente'] == true || json['Urgente'] == true,
+      isPublisherVerified: json['isPublisherVerified'] == true ||
+          json['publisherIsVerified'] == true ||
+          json['verificado'] == true ||
+          json['Verificado'] == true ||
+          (publisher != null && (publisher['isVerified'] == true || publisher['verificado'] == true || publisher['Verificado'] == true)),
     );
   }
 

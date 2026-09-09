@@ -254,6 +254,51 @@ class JobDetailPage extends ConsumerWidget {
                     title: 'Publicado por',
                     child: _PublisherCard(job: job),
                   ),
+                  if (!job.isPublisherVerified)
+                    _Section(
+                      title: 'Estado de Verificación',
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFBEB),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFFCD34D)),
+                        ),
+                        child: const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 22),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Persona con datos incompletos',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFFB45309),
+                                    ),
+                                  ),
+                                  SizedBox(height: 3),
+                                  Text(
+                                    'Este trabajo o la persona registrada no tiene los datos de verificación completos. Ten precaución y asegúrate antes de realizar cualquier trato.',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 11.5,
+                                      color: Color(0xFFB45309),
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   _Section(
                     title: 'Recomendaciones de seguridad',
                     child: const _SecurityTips(),
@@ -957,11 +1002,30 @@ class _PublisherCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  const Icon(
-                    Icons.verified_rounded,
-                    color: AppColors.primary,
-                    size: 16,
-                  ),
+                  if (job.isPublisherVerified)
+                    const Icon(
+                      Icons.verified_rounded,
+                      color: AppColors.primary,
+                      size: 16,
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFFCD34D)),
+                      ),
+                      child: const Text(
+                        'Datos incompletos',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFB45309),
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 3),
