@@ -168,6 +168,7 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                           longitude: j.longitude!,
                           title: j.title,
                           price: j.formattedBudget,
+                          categoryName: j.categoryName,
                           isUrgent: j.isUrgent,
                           onTap: () => _showJobModal(context, j),
                         ))
