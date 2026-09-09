@@ -172,48 +172,77 @@ class JobEntity {
     return false;
   }
 
-  factory JobEntity.fromJson(Map<String, dynamic> json) {
-    final publisher = json['publisher'] as Map<String, dynamic>?;
-    final category = json['category'] as Map<String, dynamic>?;
-    final imagesList = json['images'] as List?;
+  static double? _parseDouble(dynamic val) {
+    if (val == null) return null;
+    if (val is num) return val.toDouble();
+    if (val is String) {
+      final s = val.trim();
+      if (s.isEmpty || s == 'null') return null;
+      return double.tryParse(s);
+    }
+    return null;
+  }
 
-    final jobId = (json['id'] ?? json['trabajoId'] ?? '1').toString();
-    final title = (json['title'] ?? json['titulo'] ?? '').toString();
-    final desc = (json['description'] ?? json['descripcion'] ?? '').toString();
-    final catId = (json['categoryId'] ?? json['categoriaId'] ?? '1').toString();
+  factory JobEntity.fromJson(Map<String, dynamic> json) {
+    final publisher = json['publisher'] as Map<String, dynamic>? ?? json['Publisher'] as Map<String, dynamic>?;
+    final category = json['category'] as Map<String, dynamic>? ?? json['Category'] as Map<String, dynamic>?;
+    final imagesList = (json['images'] ?? json['Images'] ?? json['fotos'] ?? json['Fotos']) as List?;
+
+    final jobId = (json['id'] ?? json['Id'] ?? json['trabajoId'] ?? json['TrabajoId'] ?? '1').toString();
+    final title = (json['title'] ?? json['Title'] ?? json['titulo'] ?? json['Titulo'] ?? '').toString();
+    final desc = (json['description'] ?? json['Description'] ?? json['descripcion'] ?? json['Descripcion'] ?? '').toString();
+    final catId = (json['categoryId'] ?? json['CategoryId'] ?? json['categoriaId'] ?? json['CategoriaId'] ?? '1').toString();
     final catName =
         (category?['name'] ??
+                category?['Name'] ??
                 json['categoryName'] ??
+                json['CategoryName'] ??
                 json['categoriaNombre'] ??
+                json['CategoriaNombre'] ??
                 'General')
             .toString();
-    final addr = (json['address'] ?? json['direccion'] ?? json['distrito'])
+    final addr = (json['address'] ?? json['Address'] ?? json['direccion'] ?? json['Direccion'] ?? json['distrito'] ?? json['Distrito'])
         ?.toString();
-    final lat = (json['latitude'] ?? json['latitud'] as num?)?.toDouble();
-    final lng = (json['longitude'] ?? json['longitud'] as num?)?.toDouble();
-    final budget = (json['presupuesto'] ?? json['budgetMin'] as num?)
-        ?.toDouble();
+
+    final parsedLat = _parseDouble(
+      json['latitude'] ?? json['Latitude'] ?? json['latitud'] ?? json['Latitud'] ?? json['lat'] ?? json['Lat'],
+    );
+    final parsedLng = _parseDouble(
+      json['longitude'] ?? json['Longitude'] ?? json['longitud'] ?? json['Longitud'] ?? json['lng'] ?? json['Lng'] ?? json['lon'],
+    );
+
+    // Coordenadas con fallback determinista en Lima si no vienen en la BD
+    final lat = (parsedLat != null && parsedLat != 0.0)
+        ? parsedLat
+        : (-12.0464 + (jobId.hashCode.abs() % 50) * 0.001);
+    final lng = (parsedLng != null && parsedLng != 0.0)
+        ? parsedLng
+        : (-77.0428 + ((jobId.hashCode.abs() ~/ 50) % 50) * 0.001);
+
+    final budget = _parseDouble(
+      json['presupuesto'] ?? json['Presupuesto'] ?? json['budgetMin'] ?? json['BudgetMin'] ?? json['precio'] ?? json['Precio'],
+    );
+
     final pubId =
-        (publisher?['id'] ?? json['publisherId'] ?? json['empleadorId'] ?? '1')
+        (publisher?['id'] ?? publisher?['Id'] ?? json['publisherId'] ?? json['PublisherId'] ?? json['EmployerId'] ?? json['employerId'] ?? json['empleadorId'] ?? '1')
             .toString();
     final rawPubName =
         (json['empleadorNombre'] ??
-                '${publisher?['firstName'] ?? ''} ${publisher?['lastName'] ?? ''}'
+                json['EmployerName'] ??
+                '${publisher?['firstName'] ?? publisher?['FirstName'] ?? ''} ${publisher?['lastName'] ?? publisher?['LastName'] ?? ''}'
                     .trim())
             .toString();
     final pubName = formatPrivacyName(rawPubName);
-    final pubAvatar = json['empleadorAvatar'] ?? publisher?['avatar'];
-    final pubRating =
-        (json['empleadorCalificacion'] ?? json['publisherRating'] as num?)
-            ?.toDouble();
-    final pubReviews =
-        json['empleadorTotalResenas'] ?? json['publisherReviews'];
+    final pubAvatar = json['empleadorAvatar'] ?? json['EmployerAvatar'] ?? publisher?['avatar'] ?? publisher?['Avatar'];
+    final pubRating = _parseDouble(
+        json['empleadorCalificacion'] ?? json['publisherRating'] ?? json['PublisherRating']);
+    final pubReviews = (json['empleadorTotalResenas'] ?? json['publisherReviews'] ?? json['PublisherReviews'] as num?)?.toInt();
 
     List<String> imgs = [];
     if (imagesList != null) {
       imgs = imagesList.map((e) => e.toString()).toList();
-    } else if (json['imagenPrincipalUrl'] != null) {
-      imgs = [json['imagenPrincipalUrl'].toString()];
+    } else if (json['imagenPrincipalUrl'] != null || json['ImagenPrincipalUrl'] != null) {
+      imgs = [(json['imagenPrincipalUrl'] ?? json['ImagenPrincipalUrl']).toString()];
     }
 
     return JobEntity(
@@ -222,36 +251,36 @@ class JobEntity {
       description: desc,
       categoryId: catId,
       categoryName: catName,
-      subcategoryName: json['subcategory']?['name']?.toString(),
+      subcategoryName: (json['subcategory'] ?? json['Subcategory'])?['name']?.toString(),
       address: addr,
       latitude: lat,
       longitude: lng,
-      modality: (json['modality'] ?? json['tipoPago'] ?? 'FIXED').toString(),
+      modality: (json['modality'] ?? json['TipoPago'] ?? json['tipoPago'] ?? 'FIXED').toString(),
       budgetMin: budget,
-      budgetMax: (json['budgetMax'] as num?)?.toDouble(),
-      budgetFixed: json['budgetFixed'] as bool? ?? true,
-      currency: (json['currency'] ?? 'PEN').toString(),
-      isRemote: json['isRemote'] as bool? ?? false,
-      status: (json['status'] ?? json['estado'] ?? 'PUBLISHED').toString(),
-      duration: json['duration']?.toString(),
-      workersNeeded: json['workersNeeded'] as int? ?? 1,
-      experienceReq: json['experienceReq']?.toString(),
-      materials: (json['materials'] ?? 'TO_COORDINATE').toString(),
-      requiredDate: json['requiredDate']?.toString(),
-      applicantsCount: json['applicantsCount'] as int? ?? 0,
+      budgetMax: _parseDouble(json['budgetMax'] ?? json['BudgetMax']),
+      budgetFixed: json['budgetFixed'] as bool? ?? json['BudgetFixed'] as bool? ?? true,
+      currency: (json['currency'] ?? json['Currency'] ?? 'PEN').toString(),
+      isRemote: json['isRemote'] as bool? ?? json['IsRemote'] as bool? ?? false,
+      status: (json['status'] ?? json['estado'] ?? json['Estado'] ?? 'PUBLISHED').toString(),
+      duration: (json['duration'] ?? json['Duration'])?.toString(),
+      workersNeeded: (json['workersNeeded'] ?? json['WorkersNeeded'] as num?)?.toInt() ?? 1,
+      experienceReq: (json['experienceReq'] ?? json['ExperienceReq'])?.toString(),
+      materials: (json['materials'] ?? json['Materials'] ?? 'TO_COORDINATE').toString(),
+      requiredDate: (json['requiredDate'] ?? json['RequiredDate'])?.toString(),
+      applicantsCount: (json['applicantsCount'] ?? json['ApplicantsCount'] as num?)?.toInt() ?? 0,
       publisherId: pubId,
       publisherName: pubName.isNotEmpty ? pubName : 'Empleador',
       publisherAvatar: pubAvatar?.toString(),
       publisherRating: pubRating,
-      publisherReviews: pubReviews as int?,
+      publisherReviews: pubReviews,
       images: imgs,
-      publishedAt: json['publishedAt'] != null
-          ? DateTime.tryParse(json['publishedAt'].toString())
+      publishedAt: (json['publishedAt'] ?? json['PublishedAt']) != null
+          ? DateTime.tryParse((json['publishedAt'] ?? json['PublishedAt']).toString())
           : null,
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+      createdAt: (json['createdAt'] ?? json['CreatedAt']) != null
+          ? DateTime.tryParse((json['createdAt'] ?? json['CreatedAt']).toString()) ?? DateTime.now()
           : DateTime.now(),
-      isUrgent: json['isUrgent'] == true || json['urgente'] == true,
+      isUrgent: json['isUrgent'] == true || json['IsUrgent'] == true || json['urgente'] == true || json['Urgente'] == true,
     );
   }
 

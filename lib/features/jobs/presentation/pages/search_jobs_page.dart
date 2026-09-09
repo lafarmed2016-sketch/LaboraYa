@@ -311,7 +311,7 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                 longitude: -77.0428,
                 zoom: 13,
                 height: screenH,
-                markers: otherJobs
+                markers: jobsState.jobs
                     .where((j) => j.latitude != null && j.longitude != null)
                     .map((j) => MapJobMarker(
                           id: j.id,

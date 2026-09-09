@@ -64,19 +64,31 @@ class JobsNotifier extends StateNotifier<JobsState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final response = await _apiClient.get(
-        ApiConstants.jobsSearch,
-        queryParameters: {
-          'page': page,
-          'pageSize': 20,
-          if (state.categoryFilter != null) 'categoryId': state.categoryFilter,
-          if (state.modalityFilter != null) 'modality': state.modalityFilter,
-          if (state.searchQuery != null && state.searchQuery!.isNotEmpty)
-            'search': state.searchQuery,
-        },
-      );
+      dynamic data;
+      try {
+        final response = await _apiClient.get(
+          ApiConstants.jobsSearch,
+          queryParameters: {
+            'page': page,
+            'pageSize': 50,
+            if (state.categoryFilter != null) 'categoryId': state.categoryFilter,
+            if (state.modalityFilter != null) 'modality': state.modalityFilter,
+            if (state.searchQuery != null && state.searchQuery!.isNotEmpty)
+              'search': state.searchQuery,
+          },
+        );
+        data = response.data;
+      } catch (_) {
+        final response = await _apiClient.get(
+          ApiConstants.jobs,
+          queryParameters: {
+            'page': page,
+            'pageSize': 50,
+          },
+        );
+        data = response.data;
+      }
 
-      final data = response.data;
       if (data == null || (data is String && data.trim().isEmpty)) {
         state = state.copyWith(
           jobs: refresh ? [] : state.jobs,
@@ -86,8 +98,26 @@ class JobsNotifier extends StateNotifier<JobsState> {
         return;
       }
 
-      if (data is Map && (data['success'] == true || data['codigoRespuesta'] == '0')) {
-        final rawList = (data['data'] ?? data['datos'] ?? []) as List;
+      List rawList = [];
+      if (data is List) {
+        rawList = data;
+      } else if (data is Map) {
+        if (data['data'] is List) {
+          rawList = data['data'] as List;
+        } else if (data['datos'] is List) {
+          rawList = data['datos'] as List;
+        } else if (data['items'] is List) {
+          rawList = data['items'] as List;
+        } else if (data['jobs'] is List) {
+          rawList = data['jobs'] as List;
+        } else if (data['trabajos'] is List) {
+          rawList = data['trabajos'] as List;
+        } else if (data['result'] is List) {
+          rawList = data['result'] as List;
+        }
+      }
+
+      if (rawList.isNotEmpty) {
         final jobsList = rawList
             .map((j) => JobEntity.fromJson(Map<String, dynamic>.from(j as Map)))
             .toList();
@@ -100,27 +130,14 @@ class JobsNotifier extends StateNotifier<JobsState> {
           return job;
         }).toList();
 
-        final mergedExistingJobs = state.jobs.map((job) {
-          if (_localJobImages.containsKey(job.title) && job.images.isEmpty) {
-            return job.copyWith(images: _localJobImages[job.title]);
-          }
-          return job;
-        }).toList();
-
-        final meta = data['meta'];
-        final totalPages = meta?['totalPages'] ?? 1;
-
         state = state.copyWith(
-          jobs: refresh ? mergedJobsList : [...mergedExistingJobs, ...mergedJobsList],
+          jobs: refresh ? mergedJobsList : [...state.jobs, ...mergedJobsList],
           isLoading: false,
-          hasMore: page < totalPages,
+          hasMore: false,
           currentPage: page + 1,
         );
       } else {
-        final errorMsg = (data is Map && data['message'] != null)
-            ? data['message'].toString()
-            : 'Error al cargar trabajos';
-        state = state.copyWith(isLoading: false, error: errorMsg);
+        _loadDemoJobs();
       }
     } catch (e) {
       _loadDemoJobs();
