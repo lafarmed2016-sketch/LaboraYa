@@ -12,7 +12,20 @@
           "package_name": "com.laboraya.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "320726381262-uvcrtmeepa348g76vrer0l5g9p8uniql.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.laboraya.app",
+            "certificate_hash": "b6c0e69f813e61c4c36cc48fc0af8e9f5a96ecd7"
+          }
+        },
+        {
+          "client_id": "320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCh05y0YA_CLYv3kDUcJ2V9u6EBu1xiQII"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

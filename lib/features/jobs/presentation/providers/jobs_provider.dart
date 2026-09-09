@@ -86,10 +86,10 @@ class JobsNotifier extends StateNotifier<JobsState> {
         return;
       }
 
-      if (data is Map<String, dynamic> && (data['success'] == true || data['codigoRespuesta'] == '0')) {
-        final rawList = data['data'] ?? data['datos'] ?? [];
-        final jobsList = (rawList as List)
-            .map((j) => JobEntity.fromJson(j as Map<String, dynamic>))
+      if (data is Map && (data['success'] == true || data['codigoRespuesta'] == '0')) {
+        final rawList = (data['data'] ?? data['datos'] ?? []) as List;
+        final jobsList = rawList
+            .map((j) => JobEntity.fromJson(Map<String, dynamic>.from(j as Map)))
             .toList();
 
         // Merge local photos logic by matching title
@@ -145,9 +145,8 @@ class JobsNotifier extends StateNotifier<JobsState> {
     List<File> photos = const [],
   }) async {
     final cats = [
-      'Plomería', 'Electricidad', 'Pintura', 'Carpintería', 'Albañilería', 
-      'Limpieza', 'Cerrajería', 'Mecánica', 'Jardinería', 'Mudanzas', 
-      'Instalaciones', 'Tecnología', 'Otros'
+      'Plomería', 'Electricidad', 'Pintura', 'Albañilería', 'Carpintería', 
+      'Limpieza', 'Mecánica', 'Cerrajería', 'Técnico PC'
     ];
     final catId = cats.indexOf(categoryName) + 1;
     final finalCatId = catId > 0 ? catId : 1;
@@ -239,7 +238,8 @@ class JobsNotifier extends StateNotifier<JobsState> {
         return true;
       }
       return false;
-    } catch (_) {
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Error al publicar: $e');
       return false;
     }
   }
@@ -278,11 +278,13 @@ class JobsNotifier extends StateNotifier<JobsState> {
 
   /// Datos demo para presentación cuando el API no está disponible
   void _loadDemoJobs() {
+    // No limpiar trabajos locales si los hay — mantener los publicados localmente
     state = state.copyWith(
-      jobs: [],
       isLoading: false,
       hasMore: false,
       error: null,
+      // Conservar jobs existentes si los hay
+      jobs: state.jobs.isNotEmpty ? state.jobs : [],
     );
   }
 }

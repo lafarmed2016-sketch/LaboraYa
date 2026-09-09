@@ -23,18 +23,21 @@ final categoriesProvider = FutureProvider<List<CategoryData>>((ref) async {
     final apiClient = ref.read(apiClientProvider);
     final response = await apiClient.get(ApiConstants.categories);
     final data = response.data;
-    if (data['success'] == true) {
-      return (data['data'] as List)
-          .map(
-            (c) => CategoryData(
-              id: c['id'],
-              name: c['name'] ?? '',
-              description: c['description'],
-              icon: c['icon'],
-              sortOrder: c['sortOrder'] ?? 0,
-            ),
-          )
-          .toList();
+    if (data is Map) {
+      final isSuccess = data['success'] == true || data['codigoRespuesta'] == '0';
+      if (isSuccess) {
+        final list = (data['datos'] ?? data['data'] ?? []) as List;
+        return list.map((c) {
+          final map = c as Map<String, dynamic>;
+          return CategoryData(
+            id: (map['id'] ?? '').toString(),
+            name: (map['nombre'] ?? map['name'] ?? '').toString(),
+            description: map['descripcion']?.toString() ?? map['description']?.toString(),
+            icon: map['icono']?.toString() ?? map['icon']?.toString(),
+            sortOrder: (map['orden'] ?? map['sortOrder'] as num?)?.toInt() ?? 0,
+          );
+        }).toList();
+      }
     }
   } catch (_) {}
   return [];

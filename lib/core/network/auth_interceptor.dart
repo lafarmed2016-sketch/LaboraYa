@@ -26,6 +26,9 @@ class AuthInterceptor extends Interceptor {
       options.headers['Authorization'] = 'Bearer $hardcodedV2Token';
     } else if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
+    } else if (isV2) {
+      // Fallback para consultas públicas como Categorias o Buscar Trabajos sin sesión
+      options.headers['Authorization'] = 'Bearer $hardcodedV2Token';
     }
 
     handler.next(options);

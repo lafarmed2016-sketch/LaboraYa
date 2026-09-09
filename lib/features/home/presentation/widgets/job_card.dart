@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
-import 'package:timeago/timeago.dart' as timeago;
 
 // ─── JobCard ──────────────────────────────────────────────────────────────────
 
@@ -88,294 +87,136 @@ class _MainCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeStr = job.publishedAt != null
-        ? timeago.format(job.publishedAt!, locale: 'es')
-        : '';
     final catColor = _categoryColor(job.categoryName);
     final hasRealImage = job.images.isNotEmpty;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border, width: 0.8),
-          boxShadow: [
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: Color(0x08000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // ── Imagen / Banner 16:9 ────────────────────────────────────────
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    hasRealImage
-                        ? _buildImageWidget(job.images.first, catColor)
-                        : _buildCategoryBanner(catColor),
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: 70,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.65),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Badge categoría & urgente
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: catColor,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              job.categoryName,
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Botón favorito
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: _FavoriteButton(jobId: job.id),
-                    ),
-                    // Precio sobre degradado
-                    Positioned(
-                      bottom: 12,
-                      left: 14,
-                      child: Text(
-                        job.formattedBudget,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(color: Color(0x99000000), blurRadius: 8),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+            // Thumbnail imagen cuadrada 76x76
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 76,
+                height: 76,
+                child: hasRealImage
+                    ? _buildImageWidget(job.images.first, catColor)
+                    : _buildCategoryBanner(catColor),
               ),
             ),
+            const SizedBox(width: 12),
 
-            // ── Detalles ──────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            // Info del trabajo
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     job.title,
                     style: const TextStyle(
                       fontFamily: 'Poppins',
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      height: 1.3,
+                      color: Color(0xFF0F172A),
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       const Icon(
                         Icons.location_on_rounded,
-                        size: 14,
-                        color: AppColors.textSecondary,
+                        size: 13,
+                        color: Color(0xFF94A3B8),
                       ),
-                      const SizedBox(width: 3),
+                      const SizedBox(width: 2),
                       Expanded(
                         child: Text(
-                          job.address ?? 'Lima, Perú',
+                          '${job.address ?? "Miraflores, Lima"} • 0.5 km',
                           style: const TextStyle(
                             fontFamily: 'Poppins',
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                            color: Color(0xFF64748B),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (timeStr.isNotEmpty) ...[
-                        Container(
-                          width: 3,
-                          height: 3,
-                          margin: const EdgeInsets.symmetric(horizontal: 6),
-                          decoration: const BoxDecoration(
-                            color: AppColors.textSecondary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        Text(
-                          timeStr,
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  const Divider(height: 1, color: AppColors.border),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 15,
-                        backgroundColor: catColor.withValues(alpha: 0.15),
-                        child: Text(
-                          job.publisherName.isNotEmpty
-                              ? job.publisherName[0].toUpperCase()
-                              : 'U',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: catColor,
-                          ),
-                        ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      job.modalityLabel,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    job.publisherName,
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.verified_rounded,
-                                  size: 14,
-                                  color: AppColors.primary,
-                                ),
-                              ],
-                            ),
-                            if (job.publisherReviews != null && job.publisherReviews! > 0)
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.star_rounded,
-                                    size: 12,
-                                    color: AppColors.star,
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    (job.publisherRating ?? 5.0).toStringAsFixed(1),
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    '(${job.publisherReviews})',
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 10,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            else
-                              const Text(
-                                'Nuevo publicador',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textHint,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.inputBg,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: AppColors.border,
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Text(
-                          job.modalityLabel,
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
+            ),
+            const SizedBox(width: 8),
+
+            // Precio destacado en azul / etiqueta Urgente
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (job.isUrgent)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFECEB),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'URGENTE',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFEF4444),
+                      ),
+                    ),
+                  ),
+                Text(
+                  job.formattedBudget,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

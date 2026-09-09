@@ -25,11 +25,12 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
   bool _searchOpen = false;
 
   // Tamaños del panel (fracción de pantalla)
-  static const double _minSize = 0.38;
+  // _minSize bajo (0.065) permite ocultar el panel para ver el mapa 100% COMPLETO
+  static const double _minSize = 0.065;
+  static const double _initialSize = 0.35;
   static const double _midSize = 0.60;
   static const double _maxSize = 0.88;
 
-  double _currentSheetSize = _minSize;
   String _currentSort = 'Más recientes';
 
   @override
@@ -326,77 +327,179 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
             ),
           ),
 
-          // ── 2. ÍCONO LUPA (esquina superior derecha) ─────────
+          // ── 2. BARRA SUPERIOR FLOTANTE ESTILO PÍLDORA (Diseño idéntico a la imagen) ──
           Positioned(
-            top: top + 12,
+            top: top + 10,
+            left: 16,
             right: 16,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: _searchOpen
-                  // Barra de búsqueda expandida
-                  ? _SearchBar(
-                      key: const ValueKey('bar'),
-                      ctrl: _searchCtrl,
-                      onSearch: _onSearch,
-                      onClose: _toggleSearch,
-                    )
-                  // Solo lupa flotante blanca con ícono azul
-                  : _SearchIcon(
-                      key: const ValueKey('icon'),
-                      onTap: _toggleSearch,
+            child: Row(
+              children: [
+                // Botón menú / atrás
+                GestureDetector(
+                  onTap: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/');
+                    }
+                  },
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
-            ),
-          ),
+                    child: const Icon(
+                      Icons.menu_rounded,
+                      color: Color(0xFF0F172A),
+                      size: 22,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
 
-          // ── 3. BOTÓN GPS (esquina inferior derecha, flotando encima del panel) ──
-          Positioned(
-            right: 16,
-            bottom: (screenH * _currentSheetSize) + 16,
-            child: _GpsLocationButton(
-              onTap: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                try {
-                  final result = await LocationService.getCurrentLocation();
-                  if (!mounted) return;
-                  if (result != null) {
-                    ref.read(jobsProvider.notifier).loadJobs(refresh: true);
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text('Mostrando trabajos cerca de ${result.district}'),
-                        backgroundColor: AppColors.success,
-                        behavior: SnackBarBehavior.floating,
+                // Píldora de búsqueda central
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _toggleSearch,
+                    child: Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    );
-                  }
-                } catch (e) {
-                  if (!mounted) return;
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString().replaceAll('Exception: ', '')),
-                      backgroundColor: AppColors.error,
-                      behavior: SnackBarBehavior.floating,
+                      child: _searchOpen
+                          ? TextField(
+                              controller: _searchCtrl,
+                              autofocus: true,
+                              style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
+                              decoration: InputDecoration(
+                                hintText: 'Buscar trabajo o servicio...',
+                                hintStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF94A3B8)),
+                                border: InputBorder.none,
+                                isDense: true,
+                                suffixIcon: IconButton(
+                                  icon: const Icon(Icons.close, size: 18),
+                                  onPressed: _toggleSearch,
+                                ),
+                              ),
+                              onChanged: _onSearch,
+                            )
+                          : Row(
+                              children: [
+                                const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Buscar en esta área',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF0F172A),
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${otherJobs.length} trabajos cerca',
+                                        style: const TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 10,
+                                          color: Color(0xFF64748B),
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
-                  );
-                }
-              },
+                  ),
+                ),
+                const SizedBox(width: 10),
+
+                // Botón GPS superior derecho
+                GestureDetector(
+                  onTap: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      final result = await LocationService.getCurrentLocation();
+                      if (!mounted) return;
+                      if (result != null) {
+                        ref.read(jobsProvider.notifier).loadJobs(refresh: true);
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Mostrando trabajos cerca de ${result.district}'),
+                            backgroundColor: AppColors.success,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(e.toString().replaceAll('Exception: ', '')),
+                          backgroundColor: AppColors.error,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.my_location_rounded,
+                      color: Color(0xFF0F172A),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
-          // ── 4. PANEL DESLIZABLE INFERIOR ──────────────────────
-          NotificationListener<DraggableScrollableNotification>(
-            onNotification: (notification) {
-              setState(() {
-                _currentSheetSize = notification.extent;
-              });
-              return true;
-            },
-            child: DraggableScrollableSheet(
+          // ── 3. PANEL DESLIZABLE INFERIOR ──────────────────────
+          DraggableScrollableSheet(
               controller: _sheetCtrl,
-              initialChildSize: _minSize,
+              initialChildSize: _initialSize,
               minChildSize: _minSize,
               maxChildSize: _maxSize,
               snap: true,
-              snapSizes: const [_minSize, _midSize, _maxSize],
+              snapSizes: const [_minSize, _initialSize, _midSize, _maxSize],
               builder: (ctx, scrollCtrl) => _BottomPanel(
                 scrollController: scrollCtrl,
                 jobsState: jobsState,
@@ -407,7 +510,6 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                 onRefresh: () =>
                     ref.read(jobsProvider.notifier).loadJobs(refresh: true),
               ),
-            ),
           ),
         ],
       ),
@@ -471,109 +573,7 @@ class _GpsLocationButtonState extends State<_GpsLocationButton> {
   }
 }
 
-// ─── Ícono de lupa flotante (Superior Derecha) ────────────────────────────────
 
-class _SearchIcon extends StatelessWidget {
-  final VoidCallback onTap;
-  const _SearchIcon({super.key, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: const Icon(
-          Icons.search_rounded,
-          color: AppColors.primary,
-          size: 24,
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Barra de búsqueda expandida ─────────────────────────────────────────────
-
-class _SearchBar extends StatelessWidget {
-  final TextEditingController ctrl;
-  final ValueChanged<String> onSearch;
-  final VoidCallback onClose;
-  const _SearchBar({
-    super.key,
-    required this.ctrl,
-    required this.onSearch,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width - 32,
-      height: 48,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.14),
-            blurRadius: 14,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 14),
-          const Icon(Icons.search_rounded, color: AppColors.primary, size: 22),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: ctrl,
-              autofocus: true,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 14,
-                color: Color(0xFF0F172A),
-              ),
-              decoration: const InputDecoration(
-                hintText: 'Buscar trabajo o zona...',
-                hintStyle: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  color: Color(0xFF94A3B8),
-                ),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                isDense: true,
-              ),
-              onChanged: onSearch,
-              textInputAction: TextInputAction.search,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF64748B)),
-            onPressed: onClose,
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ─── Panel deslizable inferior ────────────────────────────────────────────────
 

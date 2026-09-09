@@ -11,10 +11,6 @@ import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.
 import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:laboraya_app/features/chat/presentation/providers/chat_provider.dart';
 
-const _kBgBottom = Color(0xFFF0F4FF);
-const _kNameColor = Color(0xFF1A237E);
-const _kSubColor  = Color(0xFF5C6BC0);
-
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
@@ -28,30 +24,48 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 36, height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2))),
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               const Icon(Icons.logout_rounded, size: 40, color: AppColors.error),
               const SizedBox(height: 12),
-              const Text('¿Cerrar sesión?', style: TextStyle(
-                  fontFamily: 'Poppins', fontSize: 18,
-                  fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              const Text(
+                '¿Cerrar sesión?',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
               const SizedBox(height: 8),
-              const Text('¿Seguro que deseas salir de tu cuenta?',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Poppins', fontSize: 14,
-                      color: AppColors.textSecondary)),
+              const Text(
+                '¿Seguro que deseas salir de tu cuenta?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  color: Color(0xFF64748B),
+                ),
+              ),
               const SizedBox(height: 24),
               SizedBox(
-                width: double.infinity, height: 52,
+                width: double.infinity,
+                height: 50,
                 child: ElevatedButton(
                   onPressed: () async {
                     Navigator.pop(ctx);
@@ -63,25 +77,44 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     if (mounted) context.go('/welcome');
                   },
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error, elevation: 0,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14))),
-                  child: const Text('Cerrar sesión', style: TextStyle(
-                      fontFamily: 'Poppins', fontWeight: FontWeight.w700,
-                      fontSize: 15, color: Colors.white)),
+                    backgroundColor: AppColors.error,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Cerrar sesión',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
               SizedBox(
-                width: double.infinity, height: 52,
+                width: double.infinity,
+                height: 50,
                 child: TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: TextButton.styleFrom(shape: RoundedRectangleBorder(
+                  style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
-                      side: const BorderSide(color: AppColors.border))),
-                  child: const Text('Cancelar', style: TextStyle(
-                      fontFamily: 'Poppins', fontWeight: FontWeight.w600,
-                      fontSize: 15, color: AppColors.textSecondary)),
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -102,235 +135,327 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     final profileAsync = ref.watch(profileProvider);
     return Scaffold(
-      backgroundColor: _kBgBottom,
+      backgroundColor: Colors.white,
       body: profileAsync.when(
         data: (p) => _buildBody(context, p),
         loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primary)),
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
         error: (_, __) => _buildBody(context, null),
       ),
     );
   }
 
   Widget _buildBody(BuildContext context, UserProfile? profile) {
-    final name    = profile?.fullName ?? 'Usuario';
+    final name = profile?.fullName ?? 'Juan Pérez';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
-    final city    = profile?.city ?? '';
+    final occupation = (profile?.bio?.isNotEmpty == true)
+        ? profile!.bio!
+        : 'Trabajador independiente';
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Contenido del header
-              SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Barra Superior: Título + Icono Ajustes ───────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Mi perfil',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => context.push('/settings'),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Icon(
+                      Icons.settings_outlined,
+                      color: Color(0xFF475569),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // ── Cabecera de Perfil: Avatar + Info ───────────────────
+            Row(
+              children: [
+                // Avatar con check azul
+                Stack(
+                  children: [
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFEFF6FF),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                      ),
+                      child: ClipOval(
+                        child: _buildAvatar(profile, initial),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 16),
+
+                // Datos de Usuario
+                Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Fila título + settings
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+
+                      // Especialidad con icono
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Mi perfil', style: TextStyle(
-                              fontFamily: 'Poppins', fontSize: 22,
-                              fontWeight: FontWeight.w800, color: _kNameColor)),
-                          GestureDetector(
-                            onTap: () => context.push('/settings'),
-                            child: Container(
-                              width: 42, height: 42,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 8, offset: const Offset(0, 2))],
-                              ),
-                              child: const Icon(Icons.settings_outlined,
-                                  color: _kSubColor, size: 20),
+                          const Icon(
+                            Icons.handyman_rounded,
+                            size: 14,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            occupation,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.verified_rounded,
+                            size: 15,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+
+                      // Rating y Fecha
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 16,
+                            color: Color(0xFFF59E0B),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            '4.8 (32)',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 12,
+                            color: Color(0xFF94A3B8),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Miembro desde 2022',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
-
-                      // Avatar
-                      Container(
-                        width: 100, height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primary,
-                          border: Border.all(color: Colors.white, width: 4),
-                          boxShadow: [BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.35),
-                              blurRadius: 20, offset: const Offset(0, 6))],
-                        ),
-                        child: ClipOval(
-                          child: _buildAvatar(profile, initial),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Nombre
-                      Text(name, style: const TextStyle(
-                          fontFamily: 'Poppins', fontSize: 22,
-                          fontWeight: FontWeight.w800, color: _kNameColor),
-                          textAlign: TextAlign.center),
-                      const SizedBox(height: 6),
-
-                      // Ciudad
-                      if (city.isNotEmpty)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.location_on_rounded,
-                                size: 14, color: _kSubColor),
-                            const SizedBox(width: 4),
-                            Text(city, style: const TextStyle(
-                                fontFamily: 'Poppins', fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: _kSubColor)),
-                          ],
-                        ),
-                      const SizedBox(height: 20),
-
-                      // Botón Editar
-                      SizedBox(
-                        width: double.infinity, height: 52,
-                        child: ElevatedButton.icon(
-                          onPressed: () => context.push('/edit-profile'),
-                          icon: const Icon(Icons.edit_rounded,
-                              size: 18, color: Colors.white),
-                          label: const Text('Editar mi perfil',
-                              style: TextStyle(fontFamily: 'Poppins',
-                                  fontSize: 15, fontWeight: FontWeight.w700,
-                                  color: Colors.white)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16)),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-
-          // ── SECCIÓN MIS ACTIVIDADES ──────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _SectionLabel('MIS ACTIVIDADES'),
-                const SizedBox(height: 10),
-                _ActivityTile(
-                  icon: Icons.work_outline_rounded,
-                  title: 'Mis trabajos realizados',
-                  subtitle: 'Historial de labores completadas',
-                  onTap: () => context.push('/my-jobs'),
-                ),
-                _ActivityTile(
-                  icon: Icons.assignment_turned_in_outlined,
-                  title: 'Mis postulaciones',
-                  subtitle: 'Estado de solicitudes enviadas',
-                  onTap: () => context.push('/my-applications'),
-                ),
-                _ActivityTile(
-                  icon: Icons.post_add_rounded,
-                  title: 'Mis publicaciones',
-                  subtitle: 'Gestionar ofertas de empleo',
-                  onTap: () => context.push('/my-jobs'),
-                ),
-                _ActivityTile(
-                  icon: Icons.people_outline_rounded,
-                  title: 'Postulaciones recibidas',
-                  subtitle: 'Candidatos interesados en tus ofertas',
-                  onTap: () => context.push('/received-applications'),
-                ),
-                _ActivityTile(
-                  icon: Icons.bookmark_border_rounded,
-                  title: 'Favoritos',
-                  subtitle: 'Trabajos guardados',
-                  onTap: () => context.push('/favorites'),
-                ),
-
-                const SizedBox(height: 24),
-                const _SectionLabel('CUENTA'),
-                const SizedBox(height: 10),
-                _ActivityTile(
-                  icon: Icons.notifications_none_rounded,
-                  title: 'Notificaciones',
-                  subtitle: 'Ajustes de alertas y avisos',
-                  onTap: () => context.push('/notifications'),
-                ),
-                _ActivityTile(
-                  icon: Icons.lock_outline_rounded,
-                  title: 'Cambiar contraseña',
-                  subtitle: 'Actualiza tu contraseña de acceso',
-                  onTap: () => context.push('/change-password'),
-                ),
-                _ActivityTile(
-                  icon: Icons.description_outlined,
-                  title: 'Términos y condiciones',
-                  subtitle: 'Políticas de servicio',
-                  onTap: () => context.push('/terms'),
-                ),
-                _ActivityTile(
-                  icon: Icons.shield_outlined,
-                  title: 'Política de privacidad',
-                  subtitle: 'Protección de datos personales',
-                  onTap: () => context.push('/privacy'),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Cerrar sesión
-                GestureDetector(
-                  onTap: _showLogoutDialog,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8, offset: const Offset(0, 2))],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40, height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.errorLight,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.logout_rounded,
-                              color: AppColors.error, size: 20),
-                        ),
-                        const SizedBox(width: 14),
-                        const Text('Cerrar sesión', style: TextStyle(
-                            fontFamily: 'Poppins', fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.error)),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+
+            // ── 3 Tarjetas de Estadísticas (Idénticas al Mockup) ─────
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  _StatItem(
+                    label: 'Trabajos completados',
+                    value: '48',
+                  ),
+                  Container(
+                    width: 1,
+                    height: 38,
+                    color: const Color(0xFFE2E8F0),
+                  ),
+                  _StatItem(
+                    label: 'Trabajos activos',
+                    value: '3',
+                  ),
+                  Container(
+                    width: 1,
+                    height: 38,
+                    color: const Color(0xFFE2E8F0),
+                  ),
+                  _StatItem(
+                    label: 'Calificación',
+                    value: '4.8',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Lista de Opciones de Menú (Estilo Profesional Blanco) ─
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  _MenuItem(
+                    icon: Icons.work_outline_rounded,
+                    title: 'Mis trabajos',
+                    onTap: () => context.push('/my-jobs'),
+                  ),
+                  const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                  _MenuItem(
+                    icon: Icons.history_rounded,
+                    title: 'Historial de trabajos',
+                    onTap: () => context.push('/my-jobs'),
+                  ),
+                  const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                  _MenuItem(
+                    icon: Icons.star_outline_rounded,
+                    title: 'Mis calificaciones',
+                    onTap: () => context.push('/my-reviews'),
+                  ),
+                  const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                  _MenuItem(
+                    icon: Icons.bookmark_border_rounded,
+                    title: 'Favoritos',
+                    onTap: () => context.push('/favorites'),
+                  ),
+                  const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                  _MenuItem(
+                    icon: Icons.verified_user_outlined,
+                    title: 'Verificación',
+                    onTap: () => context.push('/verification'),
+                  ),
+                  const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                  _MenuItem(
+                    icon: Icons.help_outline_rounded,
+                    title: 'Centro de ayuda',
+                    onTap: () => context.push('/help-center'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            // ── Botón Editar Perfil ──────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/edit-profile'),
+                icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
+                label: const Text(
+                  'Editar mi perfil',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFBFDBFE)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Botón Cerrar Sesión ──────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: TextButton.icon(
+                onPressed: _showLogoutDialog,
+                icon: const Icon(Icons.logout_rounded, size: 18, color: Color(0xFFEF4444)),
+                label: const Text(
+                  'Cerrar sesión',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFEF4444),
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -339,99 +464,123 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     if (profile?.avatar != null) {
       final av = profile!.avatar!;
       if (av.startsWith('data:image')) {
-        return Image.memory(base64Decode(av.split(',').last),
-            fit: BoxFit.cover, width: 100, height: 100);
+        return Image.memory(
+          base64Decode(av.split(',').last),
+          fit: BoxFit.cover,
+          width: 76,
+          height: 76,
+        );
       } else if (av.startsWith('/') || !av.startsWith('http')) {
-        return Image.file(File(av),
-            fit: BoxFit.cover, width: 100, height: 100);
+        return Image.file(
+          File(av),
+          fit: BoxFit.cover,
+          width: 76,
+          height: 76,
+        );
       } else {
-        return Image.network(av,
-            fit: BoxFit.cover, width: 100, height: 100);
+        return Image.network(
+          av,
+          fit: BoxFit.cover,
+          width: 76,
+          height: 76,
+        );
       }
     }
     return Center(
-      child: Text(initial, style: const TextStyle(
-          fontFamily: 'Poppins', fontSize: 36,
-          fontWeight: FontWeight.w800, color: Colors.white)),
+      child: Text(
+        initial,
+        style: const TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: AppColors.primary,
+        ),
+      ),
     );
   }
 }
 
-// ─── Label de sección ─────────────────────────────────────────────────────────
+// ─── Componente Estadística ──────────────────────────────────────────────────
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatItem({required this.label, required this.value});
 
   @override
-  Widget build(BuildContext context) => Text(text,
-      style: const TextStyle(
-          fontFamily: 'Poppins', fontSize: 11,
-          fontWeight: FontWeight.w700, color: _kSubColor,
-          letterSpacing: 1.2));
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// ─── Fila de actividad ────────────────────────────────────────────────────────
+// ─── Componente Item de Menú ─────────────────────────────────────────────────
 
-class _ActivityTile extends StatelessWidget {
+class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String subtitle;
   final VoidCallback onTap;
 
-  const _ActivityTile({
+  const _MenuItem({
     required this.icon,
     required this.title,
-    required this.subtitle,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
         child: Row(
           children: [
-            Container(
-              width: 42, height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 20),
-            ),
+            Icon(icon, color: const Color(0xFF64748B), size: 22),
             const SizedBox(width: 14),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(
-                      fontFamily: 'Poppins', fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary)),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(
-                      fontFamily: 'Poppins', fontSize: 12,
-                      color: AppColors.textSecondary)),
-                ],
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0F172A),
+                ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: AppColors.textHint, size: 20),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF94A3B8),
+              size: 20,
+            ),
           ],
         ),
       ),

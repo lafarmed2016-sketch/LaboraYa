@@ -8,7 +8,6 @@ import 'package:laboraya_app/core/services/image_picker_service.dart';
 import 'package:laboraya_app/core/services/location_service.dart';
 import 'package:laboraya_app/features/map/presentation/widgets/osm_map_widget.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
-import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 // ─── CreateJobPage ─────────────────────────────────────────────────────────────
 // Flujo simplificado: 1 sola pantalla con 5 preguntas + comentario.
@@ -26,6 +25,22 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
   final _titleCtrl   = TextEditingController(); // ¿Qué trabajo necesitas?
   final _budgetCtrl  = TextEditingController(); // ¿Cuánto ofreces?
   final _commentCtrl = TextEditingController(); // Comentario adicional
+
+  String _selectedCategory = 'Plomería';
+  // ignore: prefer_final_fields
+  String _selectedModality = 'PER_DAY';
+
+  static const _availableCategories = [
+    'Plomería',
+    'Electricidad',
+    'Pintura',
+    'Albañilería',
+    'Carpintería',
+    'Limpieza',
+    'Mecánica',
+    'Cerrajería',
+    'Técnico PC',
+  ];
 
   LatLng? _location;
   String? _locationLabel;
@@ -92,11 +107,11 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
       final ok = await ref.read(jobsProvider.notifier).createJobFromForm(
         title: _titleCtrl.text.trim(),
         description: desc,
-        categoryName: 'Otros',
+        categoryName: _selectedCategory,
         address: _locationLabel,
         latitude: _location?.latitude,
         longitude: _location?.longitude,
-        modality: 'PER_TASK',
+        modality: _selectedModality,
         budgetMin: double.tryParse(_budgetCtrl.text),
         budgetMax: double.tryParse(_budgetCtrl.text),
         isUrgent: false,
@@ -108,43 +123,36 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
       if (ok) {
         _showSuccess();
       } else {
-        _addLocalJob();
+        final err = ref.read(jobsProvider).error ?? 'No se pudo publicar el trabajo en el servidor.';
+        setState(() {
+          _error = err;
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(err),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      _addLocalJob();
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al publicar: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
   AutovalidateMode _autovalidate = AutovalidateMode.disabled;
-
-  void _addLocalJob() {
-    final newJob = JobEntity(
-      id: 'job_${DateTime.now().millisecondsSinceEpoch}',
-      title: _titleCtrl.text.trim(),
-      description: _commentCtrl.text.trim().isNotEmpty
-          ? _commentCtrl.text.trim()
-          : _titleCtrl.text.trim(),
-      categoryId: 'cat_local',
-      categoryName: 'Otros',
-      address: _locationLabel ?? 'Lima',
-      latitude: _location?.latitude ?? -12.1186,
-      longitude: _location?.longitude ?? -77.0318,
-      modality: 'PER_TASK',
-      budgetMin: double.tryParse(_budgetCtrl.text),
-      budgetMax: double.tryParse(_budgetCtrl.text),
-      budgetFixed: true,
-      materials: 'TO_COORDINATE',
-      workersNeeded: 1,
-      publisherId: 'user_current',
-      publisherName: 'Tú',
-      createdAt: DateTime.now(),
-      publishedAt: DateTime.now(),
-      images: _photo != null ? [_photo!.path] : [],
-    );
-    ref.read(jobsProvider.notifier).addJob(newJob);
-    _showSuccess();
-  }
 
   void _showSuccess() {
     if (!mounted) return;
@@ -166,8 +174,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        if (context.canPop()) context.pop();
-        else context.go('/');
+        if (context.canPop()) { context.pop(); } else { context.go('/'); }
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -181,9 +188,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                   children: [
                     GestureDetector(
                       onTap: () {
-                        if (context.canPop()) context.pop();
-                        else context.go('/');
-                      },
+                        if (context.canPop()) { context.pop(); } else { context.go('/'); }                      },
                       child: Container(
                         width: 38, height: 38,
                         decoration: BoxDecoration(
@@ -216,8 +221,41 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
 
-                        // 1 ── ¿Qué trabajo necesitas? ─────────
-                        _Question(number: '1', text: '¿Qué trabajo necesitas?'),
+                        // 1 ── Categoría ───────────────────────
+                        _Question(number: '1', text: 'Categoría'),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedCategory,
+                              isExpanded: true,
+                              icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
+                              items: _availableCategories.map((c) => DropdownMenuItem(
+                                value: c,
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.handyman_rounded, size: 18, color: AppColors.primary),
+                                    const SizedBox(width: 10),
+                                    Text(c, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              )).toList(),
+                              onChanged: (val) {
+                                if (val != null) setState(() => _selectedCategory = val);
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+
+                        // 2 ── ¿Qué trabajo necesitas? ─────────
+                        _Question(number: '2', text: '¿Qué trabajo necesitas?'),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _titleCtrl,

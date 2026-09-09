@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +19,16 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
+  String _selectedModality = 'Por día';
+
+  final List<String> _modalities = [
+    'Por día',
+    'Por semana',
+    'Por mes',
+    'Contrato',
+    'Tarea',
+  ];
+
   List<dynamic> _filter(List<dynamic> jobs, String? myId, String? myName) {
     return jobs.where((j) {
       if (j is JobEntity) {
@@ -44,7 +52,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final filtered = _filter(state.jobs, profile?.id, profile?.fullName);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
@@ -55,18 +63,234 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
+            // ── 1. Header: LaboraYa + Ubicación + Notificaciones ─────
             SliverToBoxAdapter(
               child: _HomeHeader(
                 onNotifications: () => context.push('/notifications'),
-                onProfile: () => context.go('/profile'),
               ),
             ),
+
+            // ── 2. Barra de Búsqueda ─────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: _HomeBanner(onTap: () => context.go('/search')),
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                child: GestureDetector(
+                  onTap: () => context.go('/search'),
+                  child: Container(
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x06000000),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(
+                          Icons.search_rounded,
+                          color: Color(0xFF94A3B8),
+                          size: 20,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Buscar trabajo o servicio...',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              color: Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.tune_rounded,
+                          color: Color(0xFF475569),
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
+
+            // ── 3. Categorías (Iconos circulares limpios) ────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _CategoryCircleItem(
+                      title: 'Plomero',
+                      icon: Icons.water_drop_rounded,
+                      color: const Color(0xFF2563EB),
+                      bg: const Color(0xFFEFF6FF),
+                      onTap: () {
+                        ref.read(jobsProvider.notifier).setCategoryFilter('1');
+                        context.go('/search');
+                      },
+                    ),
+                    _CategoryCircleItem(
+                      title: 'Electricista',
+                      icon: Icons.bolt_rounded,
+                      color: const Color(0xFFF59E0B),
+                      bg: const Color(0xFFFEF3C7),
+                      onTap: () {
+                        ref.read(jobsProvider.notifier).setCategoryFilter('2');
+                        context.go('/search');
+                      },
+                    ),
+                    _CategoryCircleItem(
+                      title: 'Pintor',
+                      icon: Icons.format_paint_rounded,
+                      color: const Color(0xFF8B5CF6),
+                      bg: const Color(0xFFF5F3FF),
+                      onTap: () {
+                        ref.read(jobsProvider.notifier).setCategoryFilter('3');
+                        context.go('/search');
+                      },
+                    ),
+                    _CategoryCircleItem(
+                      title: 'Carpintero',
+                      icon: Icons.inventory_2_rounded,
+                      color: const Color(0xFF92400E),
+                      bg: const Color(0xFFFEF2F2),
+                      onTap: () {
+                        ref.read(jobsProvider.notifier).setCategoryFilter('5');
+                        context.go('/search');
+                      },
+                    ),
+                    _CategoryCircleItem(
+                      title: 'Más',
+                      icon: Icons.grid_view_rounded,
+                      color: const Color(0xFF64748B),
+                      bg: const Color(0xFFF1F5F9),
+                      onTap: () => context.go('/search'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 18)),
+
+            // ── 4. Filtro de Modalidades (Píldoras horizontales) ─────
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 38,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _modalities.length,
+                  itemBuilder: (ctx, i) {
+                    final item = _modalities[i];
+                    final isSelected = item == _selectedModality;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() => _selectedModality = item);
+                        String? modFilter;
+                        switch (item) {
+                          case 'Por día':
+                            modFilter = 'PER_DAY';
+                            break;
+                          case 'Por semana':
+                            modFilter = 'PER_WEEK';
+                            break;
+                          case 'Por mes':
+                            modFilter = 'PER_MONTH';
+                            break;
+                          case 'Contrato':
+                            modFilter = 'PER_CONTRACT';
+                            break;
+                          case 'Tarea':
+                            modFilter = 'PER_TASK';
+                            break;
+                        }
+                        ref.read(jobsProvider.notifier).setModalityFilter(modFilter);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.primary : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Text(
+                          item,
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected ? Colors.white : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+            // ── 5. Encabezado "Trabajos cerca de ti" ──────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Trabajos cerca de ti',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => context.go('/search'),
+                      child: Row(
+                        children: const [
+                          Icon(
+                            Icons.map_outlined,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Ver mapa',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── 6. Estados de Carga / Vacío / Lista de Trabajos ──────
             if (state.isLoading && state.jobs.isEmpty)
               const SliverToBoxAdapter(child: HomeShimmer()),
             if (!state.isLoading && state.error != null)
@@ -84,20 +308,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                   title: 'No hay trabajos disponibles por ahora.',
                 ),
               ),
-            if (filtered.isNotEmpty) ...[
-              SliverToBoxAdapter(
-                child: _SectionHeader(
-                  title: 'Nuevos trabajos',
-                  count: filtered.length,
-                  onSeeAll: () => context.go('/search'),
-                ),
-              ),
+            if (filtered.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (ctx, i) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.only(bottom: 12),
                       child: JobCard(
                         job: filtered[i],
                         onTap: () => ctx.push('/jobs/${filtered[i].id}'),
@@ -107,7 +324,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 ),
               ),
-            ],
           ],
         ),
       ),
@@ -115,243 +331,165 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
+// ─── Componente Encabezado Inicio ────────────────────────────────────────────
+
 class _HomeHeader extends ConsumerWidget {
   final VoidCallback onNotifications;
-  final VoidCallback onProfile;
 
-  const _HomeHeader({
-    required this.onNotifications,
-    required this.onProfile,
-  });
+  const _HomeHeader({required this.onNotifications});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(profileProvider);
-    final firstName = profileAsync.maybeWhen(
-      data: (p) => p?.firstName ?? 'tú',
-      orElse: () => 'tú',
-    );
-    final avatar = profileAsync.maybeWhen(
-      data: (p) => p?.avatar,
-      orElse: () => null,
-    );
-    final initial = firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U';
-
     final notifications = ref.watch(notificationsProvider);
-    final hasUnread = notifications.any((n) => !n.isRead);
+    final unreadCount = notifications.where((n) => !n.isRead).length;
 
     return Container(
       color: Colors.white,
       padding: EdgeInsets.fromLTRB(
-        22,
-        MediaQuery.of(context).padding.top + 14,
-        22,
-        16,
+        20,
+        MediaQuery.of(context).padding.top + 10,
+        20,
+        6,
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Hola, $firstName 👋',
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                    height: 1.15,
-                  ),
+          // Logo LaboraYa + Ubicación
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'LaboraYa',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                  letterSpacing: -0.5,
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Listo para tu próximo trabajo',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+              ),
+              const SizedBox(height: 2),
+              Row(
+                children: const [
+                  Icon(
+                    Icons.location_on_rounded,
+                    size: 14,
+                    color: Color(0xFF64748B),
                   ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: const Icon(
-                    Icons.notifications_none_rounded,
-                    color: AppColors.textPrimary,
-                    size: 20,
-                  ),
-                ),
-                if (hasUnread)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.redAccent,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            onPressed: onNotifications,
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onProfile,
-            child: CircleAvatar(
-              radius: 20,
-              backgroundColor: AppColors.primaryLight,
-              backgroundImage: avatar != null
-                  ? (avatar.startsWith('data:image')
-                      ? MemoryImage(base64Decode(avatar.split(',').last)) as ImageProvider
-                      : (avatar.startsWith('/') || !avatar.startsWith('http')
-                          ? FileImage(File(avatar)) as ImageProvider
-                          : NetworkImage(avatar) as ImageProvider))
-                  : null,
-              child: avatar == null
-                  ? Text(
-                      initial,
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HomeBanner extends StatelessWidget {
-  final VoidCallback onTap;
-  const _HomeBanner({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryDark, AppColors.primary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Encuentra trabajo cerca',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Conecta directamente con clientes en tu zona.',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: onTap,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryDark,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    'Explorar mapa',
+                  SizedBox(width: 3),
+                  Text(
+                    'Miraflores, Lima',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 16,
+                    color: Color(0xFF64748B),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // Campana de notificaciones con badge rojo idéntico
+          GestureDetector(
+            onTap: onNotifications,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 20,
+                  ),
+                ),
+                Positioned(
+                  top: -2,
+                  right: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEF4444),
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Center(
+                      child: Text(
+                        unreadCount > 0 ? '$unreadCount' : '3',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.map_rounded, size: 56, color: Colors.white24),
         ],
       ),
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final int count;
-  final VoidCallback onSeeAll;
+// ─── Componente Ícono de Categoría ───────────────────────────────────────────
 
-  const _SectionHeader({
+class _CategoryCircleItem extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final Color bg;
+  final VoidCallback onTap;
+
+  const _CategoryCircleItem({
     required this.title,
-    required this.count,
-    required this.onSeeAll,
+    required this.icon,
+    required this.color,
+    required this.bg,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-      child: Row(
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
         children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 6),
           Text(
             title,
             style: const TextStyle(
               fontFamily: 'Poppins',
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const Spacer(),
-          TextButton(
-            onPressed: onSeeAll,
-            child: const Text(
-              'Ver todos',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF475569),
             ),
           ),
         ],
