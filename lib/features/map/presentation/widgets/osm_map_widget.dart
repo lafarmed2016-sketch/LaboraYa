@@ -60,8 +60,8 @@ class OsmMapWidget extends StatelessWidget {
                     .map(
                       (m) => Marker(
                         point: LatLng(m.latitude, m.longitude),
-                        width: 40,
-                        height: 44,
+                        width: 44,
+                        height: 52,
                         child: GestureDetector(
                           onTap: m.onTap,
                           child: _MapPinBadge(
@@ -142,41 +142,45 @@ class _MapPinBadge extends StatelessWidget {
     final badgeColor = _getBadgeColor();
     final icon = _getCategoryIcon();
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: badgeColor,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x3D000000),
-                blurRadius: 6,
-                offset: Offset(0, 3),
+    return SizedBox(
+      width: 40,
+      height: 48,
+      child: Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: badgeColor,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x3D000000),
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 20,
               ),
-            ],
-          ),
-          child: Center(
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 20,
             ),
           ),
-        ),
-        Transform.translate(
-          offset: const Offset(0, -3),
-          child: Icon(
-            Icons.arrow_drop_down_rounded,
-            color: badgeColor,
-            size: 16,
+          Positioned(
+            bottom: 0,
+            child: Icon(
+              Icons.arrow_drop_down_rounded,
+              color: badgeColor,
+              size: 18,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
