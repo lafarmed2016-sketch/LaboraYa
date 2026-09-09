@@ -60,12 +60,11 @@ class OsmMapWidget extends StatelessWidget {
                     .map(
                       (m) => Marker(
                         point: LatLng(m.latitude, m.longitude),
-                        width: 125,
+                        width: 46,
                         height: 52,
                         child: GestureDetector(
                           onTap: m.onTap,
                           child: _MapPinBadge(
-                            title: m.price.isNotEmpty ? m.price : m.title,
                             categoryName: m.categoryName,
                             isUrgent: m.isUrgent,
                           ),
@@ -82,12 +81,10 @@ class OsmMapWidget extends StatelessWidget {
 }
 
 class _MapPinBadge extends StatelessWidget {
-  final String title;
   final String categoryName;
   final bool isUrgent;
 
   const _MapPinBadge({
-    required this.title,
     this.categoryName = '',
     required this.isUrgent,
   });
@@ -149,47 +146,32 @@ class _MapPinBadge extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
             color: badgeColor,
-            borderRadius: BorderRadius.circular(16),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.28),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
             ],
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                color: Colors.white,
-                size: 14,
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+          child: Center(
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
         ),
         Icon(
           Icons.arrow_drop_down_rounded,
           color: badgeColor,
-          size: 18,
+          size: 16,
         ),
       ],
     );
