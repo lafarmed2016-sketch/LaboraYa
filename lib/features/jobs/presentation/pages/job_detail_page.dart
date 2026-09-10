@@ -13,7 +13,7 @@ import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 // ─── JobDetailPage ────────────────────────────────────────────────────────────
-
+// Comentario de ejemplo: Muestra los detalles completos del trabajo publicado
 class JobDetailPage extends ConsumerWidget {
   final String jobId;
   const JobDetailPage({super.key, required this.jobId});
