@@ -35,26 +35,40 @@ class _MyJobsPageState extends ConsumerState<MyJobsPage>
 
   @override
   Widget build(BuildContext context) {
-    final jobs = ref.watch(jobsProvider).jobs;
+    final myJobsAsync = ref.watch(myJobsProvider);
+    final globalJobs = ref.watch(jobsProvider).jobs;
     final profile = ref.watch(profileProvider).value;
     final myId = profile?.id;
-    final myJobs = jobs
+
+    final List<JobEntity> apiMyJobs = myJobsAsync.value ?? [];
+    final List<JobEntity> localMyJobs = globalJobs
         .where((j) => j.isMine(myId: myId, myName: profile?.fullName))
         .toList();
+
+    // Combinar sin duplicados
+    final Map<String, JobEntity> combinedMap = {};
+    for (final j in apiMyJobs) {
+      combinedMap[j.id] = j;
+    }
+    for (final j in localMyJobs) {
+      combinedMap[j.id] = j;
+    }
+    final myJobs = combinedMap.values.toList();
 
     final active = myJobs
         .where(
           (j) => [
+            'OPEN',
             'PUBLISHED',
             'RECEIVING_APPLICATIONS',
             'ASSIGNED',
             'IN_PROGRESS',
-          ].contains(j.status),
+          ].contains(j.status.toUpperCase()),
         )
         .toList();
-    final completed = myJobs.where((j) => j.status == 'COMPLETED').toList();
+    final completed = myJobs.where((j) => j.status.toUpperCase() == 'COMPLETED').toList();
     final cancelled = myJobs
-        .where((j) => ['CANCELLED', 'EXPIRED'].contains(j.status))
+        .where((j) => ['CANCELLED', 'EXPIRED'].contains(j.status.toUpperCase()))
         .toList();
 
     final counts = [active.length, completed.length, cancelled.length];

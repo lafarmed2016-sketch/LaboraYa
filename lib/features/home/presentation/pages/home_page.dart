@@ -20,6 +20,8 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   String _selectedModality = 'Por día';
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
 
   final List<String> _modalities = [
     'Por día',
@@ -29,10 +31,24 @@ class _HomePageState extends ConsumerState<HomePage> {
     'Tarea',
   ];
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   List<dynamic> _filter(List<dynamic> jobs, String? myId, String? myName) {
     return jobs.where((j) {
       if (j is JobEntity) {
-        return !j.isMine(myId: myId, myName: myName);
+        if (j.isMine(myId: myId, myName: myName)) return false;
+        if (_query.trim().isNotEmpty) {
+          final q = _query.trim().toLowerCase();
+          final matchesTitle = j.title.toLowerCase().contains(q);
+          final matchesDesc = j.description.toLowerCase().contains(q);
+          final matchesCat = j.categoryName.toLowerCase().contains(q);
+          final matchesAddress = (j.address ?? '').toLowerCase().contains(q);
+          return matchesTitle || matchesDesc || matchesCat || matchesAddress;
+        }
       }
       return true;
     }).toList();
@@ -70,52 +86,76 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
 
-            // ── 2. Barra de Búsqueda ─────────────────────────────────
+            // ── 2. Barra de Búsqueda Interactiva en Inicio ───────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-                child: GestureDetector(
-                  onTap: () => context.go('/search'),
-                  child: Container(
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x06000000),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: const [
-                        Icon(
-                          Icons.search_rounded,
-                          color: Color(0xFF94A3B8),
-                          size: 20,
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Buscar trabajo o servicio...',
-                            style: TextStyle(
+                child: Container(
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x06000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.search_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (val) {
+                            setState(() => _query = val);
+                          },
+                          decoration: const InputDecoration(
+                            hintText: 'Buscar trabajo o servicio en inicio...',
+                            hintStyle: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 13,
                               color: Color(0xFF94A3B8),
                             ),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            color: Color(0xFF0F172A),
                           ),
                         ),
-                        Icon(
+                      ),
+                      if (_query.isNotEmpty)
+                        GestureDetector(
+                          onTap: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                          child: const Icon(
+                            Icons.close_rounded,
+                            color: Color(0xFF94A3B8),
+                            size: 18,
+                          ),
+                        )
+                      else
+                        const Icon(
                           Icons.tune_rounded,
                           color: Color(0xFF475569),
                           size: 20,
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -134,8 +174,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                       color: const Color(0xFF2563EB),
                       bg: const Color(0xFFEFF6FF),
                       onTap: () {
-                        ref.read(jobsProvider.notifier).setCategoryFilter('1');
-                        context.go('/search');
+                        setState(() {
+                          _query = 'Plomero';
+                          _searchController.text = 'Plomero';
+                        });
                       },
                     ),
                     _CategoryCircleItem(
@@ -144,8 +186,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                       color: const Color(0xFFF59E0B),
                       bg: const Color(0xFFFEF3C7),
                       onTap: () {
-                        ref.read(jobsProvider.notifier).setCategoryFilter('2');
-                        context.go('/search');
+                        setState(() {
+                          _query = 'Electricista';
+                          _searchController.text = 'Electricista';
+                        });
                       },
                     ),
                     _CategoryCircleItem(
@@ -154,8 +198,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                       color: const Color(0xFF8B5CF6),
                       bg: const Color(0xFFF5F3FF),
                       onTap: () {
-                        ref.read(jobsProvider.notifier).setCategoryFilter('3');
-                        context.go('/search');
+                        setState(() {
+                          _query = 'Pintor';
+                          _searchController.text = 'Pintor';
+                        });
                       },
                     ),
                     _CategoryCircleItem(
@@ -164,16 +210,23 @@ class _HomePageState extends ConsumerState<HomePage> {
                       color: const Color(0xFF92400E),
                       bg: const Color(0xFFFEF2F2),
                       onTap: () {
-                        ref.read(jobsProvider.notifier).setCategoryFilter('5');
-                        context.go('/search');
+                        setState(() {
+                          _query = 'Carpintero';
+                          _searchController.text = 'Carpintero';
+                        });
                       },
                     ),
                     _CategoryCircleItem(
-                      title: 'Más',
+                      title: 'Todos',
                       icon: Icons.grid_view_rounded,
                       color: const Color(0xFF64748B),
                       bg: const Color(0xFFF1F5F9),
-                      onTap: () => context.go('/search'),
+                      onTap: () {
+                        setState(() {
+                          _query = '';
+                          _searchController.clear();
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -416,31 +469,32 @@ class _HomeHeader extends ConsumerWidget {
                     size: 20,
                   ),
                 ),
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEF4444),
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 18,
-                      minHeight: 18,
-                    ),
-                    child: Center(
-                      child: Text(
-                        unreadCount > 0 ? '$unreadCount' : '3',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
+                if (unreadCount > 0)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEF4444),
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

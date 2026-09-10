@@ -338,3 +338,28 @@ final jobDetailProvider = FutureProvider.family<JobEntity?, String>((
     return null;
   }
 });
+
+// My Jobs Provider — consulta mis publicaciones en V2 (/api/v2/TrabajoV2/MisPublicaciones)
+final myJobsProvider = FutureProvider<List<JobEntity>>((ref) async {
+  final apiClient = ref.read(apiClientProvider);
+  try {
+    final response = await apiClient.get(ApiConstants.jobsMine);
+    final data = response.data;
+    if (data == null) return [];
+
+    List rawList = [];
+    if (data is List) {
+      rawList = data;
+    } else if (data is Map) {
+      if (data['datos'] is List) {
+        rawList = data['datos'] as List;
+      } else if (data['data'] is List) {
+        rawList = data['data'] as List;
+      }
+    }
+
+    return rawList.map((j) => JobEntity.fromJson(j as Map<String, dynamic>)).toList();
+  } catch (_) {
+    return [];
+  }
+});
