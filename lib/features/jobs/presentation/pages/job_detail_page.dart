@@ -9,6 +9,7 @@ import 'package:laboraya_app/features/favorites/presentation/providers/favorites
 import 'package:laboraya_app/features/applications/presentation/providers/applications_provider.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 // ─── JobDetailPage ────────────────────────────────────────────────────────────

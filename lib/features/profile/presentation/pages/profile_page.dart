@@ -10,6 +10,7 @@ import 'package:laboraya_app/features/profile/presentation/providers/profile_pro
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:laboraya_app/features/chat/presentation/providers/chat_provider.dart';
+import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});

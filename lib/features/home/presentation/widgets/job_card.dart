@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:laboraya_app/app/config/env_config.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
