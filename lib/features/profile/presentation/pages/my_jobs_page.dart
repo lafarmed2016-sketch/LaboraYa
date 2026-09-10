@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -331,34 +332,74 @@ class _JobTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text(
-              job.title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textDark,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 6),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.location_on_outlined,
-                  size: 13,
-                  color: AppColors.textHint,
-                ),
-                const SizedBox(width: 3),
-                Expanded(
-                  child: Text(
-                    job.address ?? 'Sin dirección',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+                if (job.images.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: JobEntity.formatUrl(job.images.first).startsWith('http')
+                            ? Image.network(
+                                JobEntity.formatUrl(job.images.first),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  child: const Icon(Icons.work_rounded, color: AppColors.primary),
+                                ),
+                              )
+                            : Image.file(
+                                File(job.images.first),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  child: const Icon(Icons.work_rounded, color: AppColors.primary),
+                                ),
+                              ),
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job.title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 13,
+                            color: AppColors.textHint,
+                          ),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              job.address ?? 'Sin dirección',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],

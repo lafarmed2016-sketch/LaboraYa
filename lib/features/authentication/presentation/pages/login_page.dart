@@ -204,10 +204,14 @@ class _LoginPageState extends ConsumerState<LoginPage>
         setState(() => _isLoading = false);
         return;
       }
+      String userMessage = raw;
+      if (raw.contains('Api10') || raw.contains('ApiException: 10') || raw.contains('DEVELOPER_ERROR')) {
+        userMessage = 'Configuración de Firebase incompleta (Huella SHA-1 no registrada en Firebase Console). Por favor inicia sesión con correo y contraseña.';
+      } else if (raw.contains('sign_in_failed')) {
+        userMessage = 'No se pudo iniciar sesión con Google. Intenta ingresar con tu correo y contraseña.';
+      }
       setState(() {
-        _errorMessage = raw.isNotEmpty
-            ? raw
-            : 'Error al conectar con Google. Verifica tu conexión.';
+        _errorMessage = userMessage;
         _isLoading = false;
       });
     }

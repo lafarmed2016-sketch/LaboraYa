@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "320726381262-2ljr88cmmv3v0f7p7ivc0d2dpdr6nced.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.laboraya.app",
+            "certificate_hash": "f12832cd4f28eb6a145b78256504b60c68c988cf"
+          }
+        },
+        {
           "client_id": "320726381262-uvcrtmeepa348g76vrer0l5g9p8uniql.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:laboraya_app/core/constants/api_constants.dart';
@@ -207,16 +208,31 @@ class JobsNotifier extends StateNotifier<JobsState> {
 
       if (photos.isNotEmpty) {
         try {
-          final multipartList = <MultipartFile>[];
-          for (final photo in photos) {
-            multipartList.add(await MultipartFile.fromFile(photo.path, filename: 'job_photo.jpg'));
-          }
+          final formMap = <String, dynamic>{};
+          dataMap.forEach((key, val) {
+            if (val != null) {
+              formMap[key] = val.toString();
+            }
+          });
+
+          final photoFile = photos.first;
+          try {
+            final bytes = await photoFile.readAsBytes();
+            final base64Str = base64Encode(bytes);
+            formMap['ImagenUrl'] = 'data:image/jpeg;base64,$base64Str';
+          } catch (_) {}
+
+          final multipartFile = await MultipartFile.fromFile(
+            photoFile.path,
+            filename: 'job_photo_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          );
 
           final formData = FormData.fromMap({
-            ...dataMap,
-            'images': multipartList,
-            'files': multipartList,
-            'foto': multipartList.isNotEmpty ? multipartList.first : null,
+            ...formMap,
+            'file': multipartFile,
+            'files': [multipartFile],
+            'images': [multipartFile],
+            'foto': multipartFile,
           });
 
           response = await _apiClient.post(ApiConstants.jobsCreate, data: formData);

@@ -14,6 +14,7 @@ class UserProfile {
   final String userType;
   final String? city;
   final String? bio;
+  final String? dni;
   final bool emailVerified;
   final bool phoneVerified;
   final double? workerRating;
@@ -29,6 +30,7 @@ class UserProfile {
     required this.firstName,
     required this.lastName,
     this.avatar,
+    this.dni,
     this.role = 'USER',
     this.userType = 'BOTH',
     this.city,
@@ -91,6 +93,7 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
       firstName: displayName.isNotEmpty ? displayName : 'Usuario',
       lastName: lastnames,
       avatar: localAvatarPath ?? u['imagenPerfilUrl'] ?? u['fotoUrl'] ?? u['avatar'],
+      dni: (u['documentoIdentidad'] ?? u['dni'])?.toString(),
       role: (u['role'] ?? 'USER').toString(),
       userType: (u['tipoUsuario'] ?? u['userType'] ?? 'BOTH')
           .toString()
