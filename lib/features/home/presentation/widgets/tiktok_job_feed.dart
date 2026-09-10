@@ -105,9 +105,10 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
   }
 
   Widget _buildImageWidget(String path, Color catColor) {
-    if (path.startsWith('http')) {
+    final formatted = JobEntity.formatUrl(path);
+    if (formatted.startsWith('http')) {
       return Image.network(
-        path,
+        formatted,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,

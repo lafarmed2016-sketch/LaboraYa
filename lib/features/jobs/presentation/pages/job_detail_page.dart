@@ -757,16 +757,17 @@ class _JobGalleryState extends State<_JobGallery> {
               onPageChanged: (i) => setState(() => _current = i),
               itemBuilder: (_, i) {
                 final imgPath = widget.images[i];
-                if (imgPath.startsWith('/') || !imgPath.startsWith('http')) {
-                  return Image.file(
-                    File(imgPath),
+                final formattedImg = JobEntity.formatUrl(imgPath);
+                if (formattedImg.startsWith('http')) {
+                  return Image.network(
+                    formattedImg,
                     fit: BoxFit.cover,
                     width: double.infinity,
                     errorBuilder: (_, __, ___) => _CategoryBannerPlaceholder(category: widget.category),
                   );
                 }
-                return Image.network(
-                  imgPath,
+                return Image.file(
+                  File(imgPath),
                   fit: BoxFit.cover,
                   width: double.infinity,
                   errorBuilder: (_, __, ___) => _CategoryBannerPlaceholder(category: widget.category),

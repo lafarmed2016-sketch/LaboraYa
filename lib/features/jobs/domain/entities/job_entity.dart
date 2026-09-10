@@ -1,3 +1,5 @@
+import 'package:laboraya_app/app/config/env_config.dart';
+
 class JobEntity {
   final String id;
   final String title;
@@ -185,6 +187,25 @@ class JobEntity {
     return null;
   }
 
+  static String formatUrl(String rawPath) {
+    final trimmed = rawPath.trim();
+    if (trimmed.isEmpty) return trimmed;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image')) {
+      return trimmed;
+    }
+    if (trimmed.startsWith('/Uploads') ||
+        trimmed.startsWith('/uploads') ||
+        trimmed.startsWith('Uploads') ||
+        trimmed.startsWith('uploads')) {
+      final clean = trimmed.startsWith('/') ? trimmed : '/$trimmed';
+      return '${EnvConfig.development.apiBaseUrl}$clean';
+    }
+    if (trimmed.startsWith('/')) {
+      return '${EnvConfig.development.apiBaseUrl}$trimmed';
+    }
+    return trimmed;
+  }
+
   factory JobEntity.fromJson(Map<String, dynamic> json) {
     final publisher = json['publisher'] as Map<String, dynamic>? ?? json['Publisher'] as Map<String, dynamic>?;
     final category = json['category'] as Map<String, dynamic>? ?? json['Category'] as Map<String, dynamic>?;
@@ -235,16 +256,30 @@ class JobEntity {
                     .trim())
             .toString();
     final pubName = formatPrivacyName(rawPubName);
-    final pubAvatar = json['empleadorAvatar'] ?? json['EmployerAvatar'] ?? publisher?['avatar'] ?? publisher?['Avatar'];
+    final rawAvatar = json['empleadorAvatar'] ?? json['EmployerAvatar'] ?? publisher?['avatar'] ?? publisher?['Avatar'] ?? json['avatarUrl'] ?? json['AvatarUrl'];
+    final pubAvatar = rawAvatar != null && rawAvatar.toString().trim().isNotEmpty
+        ? formatUrl(rawAvatar.toString())
+        : null;
     final pubRating = _parseDouble(
         json['empleadorCalificacion'] ?? json['publisherRating'] ?? json['PublisherRating']);
     final pubReviews = (json['empleadorTotalResenas'] ?? json['publisherReviews'] ?? json['PublisherReviews'] as num?)?.toInt();
 
+    final rawSingleImage = json['imageUrl'] ??
+        json['ImageUrl'] ??
+        json['imagenUrl'] ??
+        json['ImagenUrl'] ??
+        json['imagenPrincipalUrl'] ??
+        json['ImagenPrincipalUrl'] ??
+        json['foto'] ??
+        json['Foto'] ??
+        json['imagen'] ??
+        json['Imagen'];
+
     List<String> imgs = [];
-    if (imagesList != null) {
-      imgs = imagesList.map((e) => e.toString()).toList();
-    } else if (json['imagenPrincipalUrl'] != null || json['ImagenPrincipalUrl'] != null) {
-      imgs = [(json['imagenPrincipalUrl'] ?? json['ImagenPrincipalUrl']).toString()];
+    if (imagesList != null && imagesList.isNotEmpty) {
+      imgs = imagesList.map((e) => formatUrl(e.toString())).where((s) => s.isNotEmpty).toList();
+    } else if (rawSingleImage != null && rawSingleImage.toString().trim().isNotEmpty) {
+      imgs = [formatUrl(rawSingleImage.toString())];
     }
 
     return JobEntity(

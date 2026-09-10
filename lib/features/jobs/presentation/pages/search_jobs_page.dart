@@ -669,9 +669,10 @@ class _SearchJobTile extends ConsumerWidget {
     final catColor = _categoryColor(job.categoryName);
     if (job.images.isNotEmpty) {
       final img = job.images.first;
-      if (img.startsWith('http')) {
+      final formattedImg = JobEntity.formatUrl(img);
+      if (formattedImg.startsWith('http')) {
         return Image.network(
-          img,
+          formattedImg,
           width: 96,
           height: 96,
           fit: BoxFit.cover,

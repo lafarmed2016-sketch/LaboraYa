@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:laboraya_app/app/config/env_config.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
@@ -33,9 +34,10 @@ class _MainCard extends StatelessWidget {
   const _MainCard({required this.job, this.onTap});
 
   Widget _buildImageWidget(String path, Color catColor) {
-    if (path.startsWith('http')) {
+    final formatted = JobEntity.formatUrl(path);
+    if (formatted.startsWith('http')) {
       return Image.network(
-        path,
+        formatted,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _buildCategoryBanner(catColor),
       );
@@ -240,9 +242,10 @@ class _UrgentCard extends StatelessWidget {
   const _UrgentCard({required this.job, this.onTap});
 
   Widget _buildImageWidget(String path, Color catColor) {
-    if (path.startsWith('http')) {
+    final formatted = JobEntity.formatUrl(path);
+    if (formatted.startsWith('http')) {
       return Image.network(
-        path,
+        formatted,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _buildCategoryBanner(catColor),
       );

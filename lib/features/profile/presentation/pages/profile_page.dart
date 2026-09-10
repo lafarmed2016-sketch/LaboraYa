@@ -463,6 +463,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget _buildAvatar(UserProfile? profile, String initial) {
     if (profile?.avatar != null) {
       final av = profile!.avatar!;
+      final formattedAv = JobEntity.formatUrl(av);
       if (av.startsWith('data:image')) {
         return Image.memory(
           base64Decode(av.split(',').last),
@@ -470,16 +471,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           width: 76,
           height: 76,
         );
-      } else if (av.startsWith('/') || !av.startsWith('http')) {
-        return Image.file(
-          File(av),
+      } else if (formattedAv.startsWith('http')) {
+        return Image.network(
+          formattedAv,
           fit: BoxFit.cover,
           width: 76,
           height: 76,
         );
       } else {
-        return Image.network(
-          av,
+        return Image.file(
+          File(av),
           fit: BoxFit.cover,
           width: 76,
           height: 76,
