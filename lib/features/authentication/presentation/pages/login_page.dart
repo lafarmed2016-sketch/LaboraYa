@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -120,9 +121,15 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
     try {
       // 1. Inicia el flujo de selección de cuenta Google
-      final googleSignIn = GoogleSignIn(
-        clientId: '320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com',
-      );
+      // En Android usamos serverClientId para obtener token válido para backend/Firebase
+      final googleSignIn = kIsWeb
+          ? GoogleSignIn(
+              clientId: '320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com',
+            )
+          : GoogleSignIn(
+              serverClientId: '320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com',
+            );
+
       final googleAccount = await googleSignIn.signIn();
 
       // Usuario canceló
@@ -144,13 +151,23 @@ class _LoginPageState extends ConsumerState<LoginPage>
       final user = userCredential.user;
       if (user == null) throw Exception('No se pudo obtener el usuario de Google.');
 
-      // 4. Guardar el token de Firebase como accessToken para los requests al backend
-      final idToken = await user.getIdToken();
-      if (idToken != null) {
-        final storage = ref.read(secureStorageProvider);
-        await storage.saveAccessToken(idToken);
-        await storage.saveUserId(user.uid);
-        await storage.saveUsername(user.displayName ?? user.email ?? '');
+      // 4. Iniciar sesión / registrar en el Backend C# (WorkGoApp V2 API)
+      final authService = ref.read(authServiceProvider);
+      try {
+        await authService.loginWithGoogleAccount(
+          email: user.email ?? googleAccount.email,
+          googleId: user.uid,
+          displayName: user.displayName ?? googleAccount.displayName ?? 'Usuario Google',
+        );
+      } catch (_) {
+        // Fallback a almacenamiento local de credenciales si la API responde diferente
+        final idToken = await user.getIdToken();
+        if (idToken != null) {
+          final storage = ref.read(secureStorageProvider);
+          await storage.saveAccessToken(idToken);
+          await storage.saveUserId(user.uid);
+          await storage.saveUsername(user.displayName ?? user.email ?? '');
+        }
       }
 
       if (!mounted) return;
@@ -182,8 +199,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
     } catch (e) {
       if (!mounted) return;
       final raw = e.toString().replaceFirst('Exception: ', '').trim();
-      // Si el usuario cancela el selector de cuenta no mostrar error
-      if (raw.contains('sign_in_canceled') || raw.contains('canceled')) {
+      // Si el usuario cancela el selector de cuenta o 12501 no mostrar mensaje de error
+      if (raw.contains('sign_in_canceled') || raw.contains('canceled') || raw.contains('12501')) {
         setState(() => _isLoading = false);
         return;
       }

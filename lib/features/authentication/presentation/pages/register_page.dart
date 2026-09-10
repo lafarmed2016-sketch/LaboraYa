@@ -1,9 +1,17 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/services/auth_service.dart';
+import 'package:laboraya_app/core/storage/secure_storage.dart';
+import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
+import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:laboraya_app/features/chat/presentation/providers/chat_provider.dart';
 
 // ─── RegisterPage — registro rápido en 1 pantalla ────────────────────────────
 // Solo pide lo mínimo: nombre, apellido, correo, contraseña, confirmar.
@@ -132,6 +140,95 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
         return 'No se pudo crear la cuenta. Intenta de nuevo.';
       default:
         return 'Sin conexión. Verifica tu internet.';
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isLoading) return;
+    setState(() { _error = null; _isLoading = true; });
+
+    try {
+      final googleSignIn = kIsWeb
+          ? GoogleSignIn(
+              clientId: '320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com',
+            )
+          : GoogleSignIn(
+              serverClientId: '320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com',
+            );
+
+      final googleAccount = await googleSignIn.signIn();
+
+      if (googleAccount == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      final googleAuth = await googleAccount.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = userCredential.user;
+      if (user == null) throw Exception('No se pudo obtener el usuario de Google.');
+
+      final authService = ref.read(authServiceProvider);
+      try {
+        await authService.loginWithGoogleAccount(
+          email: user.email ?? googleAccount.email,
+          googleId: user.uid,
+          displayName: user.displayName ?? googleAccount.displayName ?? 'Usuario Google',
+        );
+      } catch (_) {
+        final idToken = await user.getIdToken();
+        if (idToken != null) {
+          final storage = ref.read(secureStorageProvider);
+          await storage.saveAccessToken(idToken);
+          await storage.saveUserId(user.uid);
+          await storage.saveUsername(user.displayName ?? user.email ?? '');
+        }
+      }
+
+      if (!mounted) return;
+
+      ref.invalidate(profileProvider);
+      ref.invalidate(jobsProvider);
+      ref.invalidate(notificationsProvider);
+      ref.invalidate(conversationsProvider);
+      context.go('/');
+
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String msg;
+      switch (e.code) {
+        case 'account-exists-with-different-credential':
+          msg = 'Ya existe una cuenta con ese correo. Inicia sesión con email.';
+          break;
+        case 'invalid-credential':
+          msg = 'Credencial inválida. Intenta de nuevo.';
+          break;
+        case 'user-disabled':
+          msg = 'Esta cuenta ha sido deshabilitada.';
+          break;
+        default:
+          msg = e.message ?? 'Error al registrarse con Google.';
+      }
+      setState(() { _error = msg; _isLoading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      final raw = e.toString().replaceFirst('Exception: ', '').trim();
+      if (raw.contains('sign_in_canceled') || raw.contains('canceled') || raw.contains('12501')) {
+        setState(() => _isLoading = false);
+        return;
+      }
+      setState(() {
+        _error = raw.isNotEmpty
+            ? raw
+            : 'Error al conectar con Google. Verifica tu conexión.';
+        _isLoading = false;
+      });
     }
   }
 
@@ -345,7 +442,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
                             iconAsset: 'assets/icons/gmail.png',
                             fallbackIcon: Icons.g_mobiledata,
                             fallbackColor: const Color(0xFFEA4335),
-                            onTap: () {},
+                            onTap: _handleGoogleSignIn,
                           ),
                         ),
                       ],
