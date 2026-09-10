@@ -74,6 +74,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     final selectedIndex = _calculateSelectedIndex(context);
     final conversationsAsync = ref.watch(conversationsProvider);
     final unreadCount = conversationsAsync.value?.fold<int>(0, (sum, c) => sum + c.unreadCount) ?? 0;
+    final isHome = selectedIndex == 0;
 
     return PopScope(
       canPop: false,
@@ -83,18 +84,24 @@ class _MainShellState extends ConsumerState<MainShell> {
       },
       child: Scaffold(
         body: widget.child,
-        bottomNavigationBar: Container(
+        bottomNavigationBar: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
           decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 16,
-                offset: const Offset(0, -4),
+            color: isHome ? Colors.black : Colors.white,
+            boxShadow: isHome
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 16,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+            border: Border(
+              top: BorderSide(
+                color: isHome ? Colors.white12 : AppColors.border,
+                width: 0.8,
               ),
-            ],
-            border: const Border(
-              top: BorderSide(color: AppColors.border, width: 0.8),
             ),
           ),
           child: SafeArea(
@@ -108,6 +115,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     activeIcon: Icons.home_rounded,
                     label: 'Inicio',
                     isSelected: selectedIndex == 0,
+                    isDarkBackground: isHome,
                     onTap: () => _onItemTapped(context, 0),
                   ),
                   _NavItem(
@@ -115,6 +123,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     activeIcon: Icons.search_rounded,
                     label: 'Buscar',
                     isSelected: selectedIndex == 1,
+                    isDarkBackground: isHome,
                     onTap: () => _onItemTapped(context, 1),
                   ),
                   _CenterFab(onTap: () => _onItemTapped(context, 2)),
@@ -123,6 +132,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     activeIcon: Icons.chat_bubble_rounded,
                     label: 'Mensajes',
                     isSelected: selectedIndex == 3,
+                    isDarkBackground: isHome,
                     onTap: () => _onItemTapped(context, 3),
                     badgeCount: unreadCount,
                   ),
@@ -131,6 +141,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     activeIcon: Icons.person_rounded,
                     label: 'Perfil',
                     isSelected: selectedIndex == 4,
+                    isDarkBackground: isHome,
                     onTap: () => _onItemTapped(context, 4),
                   ),
                 ],
@@ -150,6 +161,7 @@ class _NavItem extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final int badgeCount;
+  final bool isDarkBackground;
 
   const _NavItem({
     required this.icon,
@@ -158,68 +170,96 @@ class _NavItem extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.badgeCount = 0,
+    this.isDarkBackground = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary : AppColors.textSecondary;
+    final color = isSelected
+        ? AppColors.primary
+        : (isDarkBackground ? Colors.white70 : AppColors.textSecondary);
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 64,
+        width: 66,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(isSelected ? activeIcon : icon, color: color, size: 24),
-                if (badgeCount > 0)
-                  Positioned(
-                    right: -7,
-                    top: -4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.error,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        '$badgeCount',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'Poppins',
-                          height: 1,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutBack,
+              transform: Matrix4.translationValues(0, isSelected ? -6.0 : 0.0, 0),
+              transformAlignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: isDarkBackground ? 0.25 : 0.12)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AnimatedScale(
+                    scale: isSelected ? 1.15 : 1.0,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutBack,
+                    child: Icon(
+                      isSelected ? activeIcon : icon,
+                      color: color,
+                      size: 24,
                     ),
                   ),
-              ],
+                  if (badgeCount > 0)
+                    Positioned(
+                      right: -7,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.error,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$badgeCount',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: 'Poppins',
+                            height: 1,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
+            const SizedBox(height: 2),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: TextStyle(
                 fontFamily: 'Poppins',
-                fontSize: 11,
+                fontSize: isSelected ? 11.5 : 11,
                 color: color,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

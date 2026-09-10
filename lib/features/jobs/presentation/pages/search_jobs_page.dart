@@ -208,7 +208,7 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                       ],
                     ),
                     child: const Icon(
-                      Icons.menu_rounded,
+                      Icons.arrow_back_rounded,
                       color: Color(0xFF0F172A),
                       size: 22,
                     ),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
+import 'package:laboraya_app/core/widgets/firma_digital_modal.dart';
 import 'package:laboraya_app/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:laboraya_app/features/applications/presentation/providers/applications_provider.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
@@ -472,6 +473,7 @@ class JobDetailPage extends ConsumerWidget {
   void _showApplySheet(BuildContext context, WidgetRef ref, dynamic job) {
     final msgCtrl = TextEditingController();
     final budgetCtrl = TextEditingController();
+    Uint8List? signatureBytes;
 
     showModalBottomSheet(
       context: context,
@@ -480,88 +482,212 @@ class JobDetailPage extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const Text(
-              'Enviar postulación',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+              const Text(
+                'Enviar postulación',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: msgCtrl,
-              maxLines: 3,
-              style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
-              decoration: const InputDecoration(
-                hintText: 'Mensaje de presentación...',
-                hintStyle: TextStyle(fontFamily: 'Poppins'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: msgCtrl,
+                maxLines: 3,
+                style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: 'Mensaje de presentación...',
+                  hintStyle: TextStyle(fontFamily: 'Poppins'),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: budgetCtrl,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
-              decoration: const InputDecoration(
-                hintText: 'Tu propuesta económica',
-                prefixText: 'S/ ',
-                hintStyle: TextStyle(fontFamily: 'Poppins'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: budgetCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: 'Tu propuesta económica',
+                  prefixText: 'S/ ',
+                  hintStyle: TextStyle(fontFamily: 'Poppins'),
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () async {
-                  final budget = double.tryParse(budgetCtrl.text) ?? 0;
-                  await ref
-                      .read(applicationsProvider.notifier)
-                      .apply(
-                        jobId: job.id,
-                        jobTitle: job.title,
-                        employerName: job.publisherName,
-                        budget: budget,
-                        message: msgCtrl.text,
-                      );
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          '¡Postulación enviada!',
-                          style: TextStyle(fontFamily: 'Poppins'),
-                        ),
-                        backgroundColor: AppColors.success,
-                        behavior: SnackBarBehavior.floating,
+              const SizedBox(height: 14),
+
+              // ── Sección de Firma Digital ─────────────────────────
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: signatureBytes != null
+                        ? AppColors.success
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: signatureBytes != null
+                            ? AppColors.success.withValues(alpha: 0.1)
+                            : AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    );
-                  }
-                },
+                      child: Icon(
+                        signatureBytes != null
+                            ? Icons.verified_rounded
+                            : Icons.draw_rounded,
+                        color: signatureBytes != null
+                            ? AppColors.success
+                            : AppColors.primary,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            signatureBytes != null
+                                ? 'Firma Digital Registrada ✅'
+                                : 'Firma Digital (Opcional / Recomendado)',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: signatureBytes != null
+                                  ? AppColors.success
+                                  : const Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            signatureBytes != null
+                                ? 'Firma vinculada a esta postulación'
+                                : 'Firme en pantalla para dar validez al acuerdo',
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final result = await FirmaDigitalModal.show(context);
+                        if (result != null) {
+                          setModalState(() {
+                            signatureBytes = result;
+                          });
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: signatureBytes != null
+                            ? const Color(0xFFE2E8F0)
+                            : AppColors.primary,
+                        foregroundColor: signatureBytes != null
+                            ? const Color(0xFF0F172A)
+                            : Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        signatureBytes != null ? 'Re-firmar' : 'Firmar',
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (signatureBytes != null) ...[
+                const SizedBox(height: 10),
+                Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      color: Colors.white,
+                      padding: const EdgeInsets.all(4),
+                      child: Image.memory(
+                        signatureBytes!,
+                        height: 48,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final budget = double.tryParse(budgetCtrl.text) ?? 0;
+                    await ref
+                        .read(applicationsProvider.notifier)
+                        .apply(
+                          jobId: job.id,
+                          jobTitle: job.title,
+                          employerName: job.publisherName,
+                          budget: budget,
+                          message: msgCtrl.text,
+                        );
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            signatureBytes != null
+                                ? '¡Postulación con Firma Digital enviada con éxito! ✍️✅'
+                                : '¡Postulación enviada!',
+                            style: const TextStyle(fontFamily: 'Poppins'),
+                          ),
+                          backgroundColor: AppColors.success,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -583,6 +709,7 @@ class JobDetailPage extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
