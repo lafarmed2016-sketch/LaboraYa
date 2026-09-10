@@ -148,7 +148,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
     setState(() { _error = null; _isLoading = true; });
 
     try {
-      final googleSignIn = kIsWeb
+      GoogleSignIn googleSignIn = kIsWeb
           ? GoogleSignIn(
               clientId: '320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com',
             )
@@ -156,7 +156,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
               serverClientId: '320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com',
             );
 
-      final googleAccount = await googleSignIn.signIn();
+      GoogleSignInAccount? googleAccount;
+      try {
+        googleAccount = await googleSignIn.signIn();
+      } catch (e) {
+        if (!kIsWeb && e.toString().contains('10')) {
+          googleSignIn = GoogleSignIn();
+          googleAccount = await googleSignIn.signIn();
+        } else {
+          rethrow;
+        }
+      }
 
       if (googleAccount == null) {
         if (mounted) setState(() => _isLoading = false);

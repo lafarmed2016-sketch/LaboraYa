@@ -122,7 +122,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
     try {
       // 1. Inicia el flujo de selección de cuenta Google
       // En Android usamos serverClientId para obtener token válido para backend/Firebase
-      final googleSignIn = kIsWeb
+      GoogleSignIn googleSignIn = kIsWeb
           ? GoogleSignIn(
               clientId: '320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com',
             )
@@ -130,7 +130,18 @@ class _LoginPageState extends ConsumerState<LoginPage>
               serverClientId: '320726381262-pv5u18f1ki1sfp544prfvftbk7birpsv.apps.googleusercontent.com',
             );
 
-      final googleAccount = await googleSignIn.signIn();
+      GoogleSignInAccount? googleAccount;
+      try {
+        googleAccount = await googleSignIn.signIn();
+      } catch (e) {
+        if (!kIsWeb && e.toString().contains('10')) {
+          // Intentar sin serverClientId por si la propagación OAuth en Google aun toma unos minutos
+          googleSignIn = GoogleSignIn();
+          googleAccount = await googleSignIn.signIn();
+        } else {
+          rethrow;
+        }
+      }
 
       // Usuario canceló
       if (googleAccount == null) {
