@@ -573,9 +573,8 @@ class _SocialBarState extends State<_SocialBar> with SingleTickerProviderStateMi
   @override
   void initState() {
     super.initState();
-    final hash = widget.job.id.hashCode.abs();
-    _likeCount = (hash % 38) + 8;
-    _commentCount = (hash % 10) + 2;
+    _likeCount = 0;
+    _commentCount = 0;
 
     _heartAnimCtrl = AnimationController(
       vsync: this,

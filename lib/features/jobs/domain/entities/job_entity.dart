@@ -264,16 +264,29 @@ class JobEntity {
     );
   }
 
+  static String fixUtf8Encoding(String input) {
+    if (input.isEmpty) return input;
+    if (input.contains('Ã') || input.contains('Â') || input.contains('ï¿½')) {
+      try {
+        final latin1Bytes = latin1.encode(input);
+        return utf8.decode(latin1Bytes);
+      } catch (_) {}
+    }
+    return input;
+  }
+
   factory JobEntity.fromJson(Map<String, dynamic> json) {
     final publisher = json['publisher'] as Map<String, dynamic>? ?? json['Publisher'] as Map<String, dynamic>?;
     final category = json['category'] as Map<String, dynamic>? ?? json['Category'] as Map<String, dynamic>?;
-    final imagesList = (json['images'] ?? json['Images'] ?? json['fotos'] ?? json['Fotos'] ?? json['jobPhotos'] ?? json['JobPhotos']) as List?;
+    final rawImagesList = (json['images'] ?? json['Images'] ?? json['jobPhotos'] ?? json['JobPhotos']) as List?;
 
     final jobId = (json['id'] ?? json['Id'] ?? json['trabajoId'] ?? json['TrabajoId'] ?? '1').toString();
-    final title = (json['title'] ?? json['Title'] ?? json['titulo'] ?? json['Titulo'] ?? '').toString();
-    final desc = (json['description'] ?? json['Description'] ?? json['descripcion'] ?? json['Descripcion'] ?? '').toString();
+    final rawTitle = (json['title'] ?? json['Title'] ?? json['titulo'] ?? json['Titulo'] ?? '').toString();
+    final rawDesc = (json['description'] ?? json['Description'] ?? json['descripcion'] ?? json['Descripcion'] ?? '').toString();
+    final title = fixUtf8Encoding(rawTitle);
+    final desc = fixUtf8Encoding(rawDesc);
     final catId = (json['categoryId'] ?? json['CategoryId'] ?? json['categoriaId'] ?? json['CategoriaId'] ?? '1').toString();
-    final catName =
+    final rawCatName =
         (category?['name'] ??
                 category?['Name'] ??
                 json['categoryName'] ??
@@ -282,8 +295,10 @@ class JobEntity {
                 json['CategoriaNombre'] ??
                 'General')
             .toString();
-    final addr = (json['address'] ?? json['Address'] ?? json['direccion'] ?? json['Direccion'] ?? json['distrito'] ?? json['Distrito'])
+    final catName = fixUtf8Encoding(rawCatName);
+    final rawAddr = (json['address'] ?? json['Address'] ?? json['direccion'] ?? json['Direccion'] ?? json['distrito'] ?? json['Distrito'])
         ?.toString();
+    final addr = rawAddr != null ? fixUtf8Encoding(rawAddr) : null;
 
     final parsedLat = _parseDouble(
       json['latitude'] ?? json['Latitude'] ?? json['latitud'] ?? json['Latitud'] ?? json['lat'] ?? json['Lat'],
@@ -313,7 +328,7 @@ class JobEntity {
                 '${publisher?['firstName'] ?? publisher?['FirstName'] ?? ''} ${publisher?['lastName'] ?? publisher?['LastName'] ?? ''}'
                     .trim())
             .toString();
-    final pubName = formatPrivacyName(rawPubName);
+    final pubName = fixUtf8Encoding(formatPrivacyName(rawPubName));
     final rawAvatar = json['empleadorFoto'] ??
         json['EmpleadorFoto'] ??
         json['empleadorAvatar'] ??
@@ -344,21 +359,39 @@ class JobEntity {
         json['photoUrl'] ??
         json['PhotoUrl'];
 
-    List<String> imgs = [];
-    final rawFotosStr = json['fotos'] ?? json['Fotos'];
-    if (imagesList != null && imagesList.isNotEmpty) {
-      imgs = imagesList.map((e) {
-        if (e is Map) {
-          final urlStr = (e['imageUrl'] ?? e['ImageUrl'] ?? e['rutaImagen'] ?? e['url'] ?? e['path'])?.toString() ?? '';
-          return formatUrl(urlStr);
+    final List<String> imgs = [];
+    void addImg(String? raw) {
+      if (raw == null) return;
+      final formatted = formatUrl(raw.trim());
+      if (formatted.isNotEmpty && !imgs.contains(formatted)) {
+        imgs.add(formatted);
+      }
+    }
+
+    // 1. Extraer de lista de objetos/strings
+    if (rawImagesList != null) {
+      for (final item in rawImagesList) {
+        if (item is Map) {
+          final u = (item['imageUrl'] ?? item['ImageUrl'] ?? item['rutaImagen'] ?? item['url'] ?? item['path'])?.toString();
+          addImg(u);
+        } else if (item != null) {
+          addImg(item.toString());
         }
-        return formatUrl(e.toString());
-      }).where((s) => s.isNotEmpty).toList();
-    } else if (rawFotosStr is String && rawFotosStr.trim().isNotEmpty) {
-      final parts = rawFotosStr.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-      imgs = parts.map((s) => formatUrl(s)).toList();
-    } else if (rawSingleImage != null && rawSingleImage.toString().trim().isNotEmpty) {
-      imgs = [formatUrl(rawSingleImage.toString())];
+      }
+    }
+
+    // 2. Extraer de cadena 'fotos' / 'Fotos' separada por comas
+    final rawFotosStr = json['fotos'] ?? json['Fotos'];
+    if (rawFotosStr is String && rawFotosStr.trim().isNotEmpty) {
+      final parts = rawFotosStr.split(',');
+      for (final p in parts) {
+        addImg(p);
+      }
+    }
+
+    // 3. Extraer imagen principal si no está en la lista
+    if (rawSingleImage != null) {
+      addImg(rawSingleImage.toString());
     }
 
     return JobEntity(
