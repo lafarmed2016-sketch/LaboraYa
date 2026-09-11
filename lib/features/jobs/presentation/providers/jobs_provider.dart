@@ -251,8 +251,6 @@ class JobsNotifier extends StateNotifier<JobsState> {
           final formData = FormData.fromMap({
             ...formMap,
             'files': multipartFiles,
-            if (base64Img != null) 'ImagenUrl': base64Img,
-            if (base64Img != null) 'imageUrl': base64Img,
           });
 
           response = await _apiClient.post(ApiConstants.jobsCreate, data: formData);
