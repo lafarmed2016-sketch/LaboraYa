@@ -45,8 +45,8 @@ class NotificationsNotifier extends StateNotifier<List<NotificationData>> {
                 id: (n['id'] ?? n['Id'] ?? n['notificacionId'] ?? n['NotificacionId'] ?? '1').toString(),
                 type: (n['type'] ?? n['Type'] ?? n['tipo'] ?? n['Tipo'] ?? 'GENERAL').toString(),
                 title: (n['title'] ?? n['Title'] ?? n['titulo'] ?? n['Titulo'] ?? 'Notificación').toString(),
-                body: (n['body'] ?? n['Body'] ?? n['cuerpo'] ?? n['Cuerpo'] ?? '').toString(),
-                data: (n['data'] ?? n['Data'] ?? n['relatedId'] ?? n['RelatedId'])?.toString(),
+                body: (n['mensaje'] ?? n['Mensaje'] ?? n['body'] ?? n['Body'] ?? n['cuerpo'] ?? n['Cuerpo'] ?? '').toString(),
+                data: (n['referenciaId'] ?? n['ReferenciaId'] ?? n['relatedId'] ?? n['RelatedId'] ?? n['data'] ?? n['Data'])?.toString(),
                 isRead: n['esLeido'] == true || n['isRead'] == true || n['IsRead'] == true || n['IsRead'] == 1 || n['isRead'] == 1,
                 createdAt: DateTime.tryParse(
                       (n['createdAt'] ?? n['CreatedAt'] ?? n['fechaCreacion'] ?? n['FechaCreacion'] ?? '').toString(),
@@ -61,7 +61,7 @@ class NotificationsNotifier extends StateNotifier<List<NotificationData>> {
 
   Future<void> markRead(String id) async {
     try {
-      await _apiClient.put('${ApiConstants.notifications}/$id/read');
+      await _apiClient.put('${ApiConstants.notifications}/$id/Leer');
       state = state
           .map(
             (n) => n.id == id
