@@ -357,12 +357,6 @@ final jobDetailProvider = FutureProvider.family<JobEntity?, String>((
   ref,
   jobId,
 ) async {
-  final jobs = ref.read(jobsProvider).jobs;
-  var localJob = jobs.where((j) => j.id == jobId).firstOrNull;
-  if (localJob != null) {
-    return localJob;
-  }
-
   try {
     final apiClient = ref.read(apiClientProvider);
     final response = await apiClient.get('${ApiConstants.jobs}/$jobId');
@@ -372,10 +366,10 @@ final jobDetailProvider = FutureProvider.family<JobEntity?, String>((
       final jobData = u['job'] ?? u;
       return JobEntity.fromJson(Map<String, dynamic>.from(jobData as Map));
     }
-    return null;
-  } catch (e) {
-    return null;
-  }
+  } catch (_) {}
+
+  final jobs = ref.read(jobsProvider).jobs;
+  return jobs.where((j) => j.id == jobId).firstOrNull;
 });
 
 // My Jobs Provider — consulta mis publicaciones en V2 (/api/v2/TrabajoV2/MisPublicaciones)

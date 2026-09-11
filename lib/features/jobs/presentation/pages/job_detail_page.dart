@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/widgets/firma_digital_modal.dart';
 import 'package:laboraya_app/features/favorites/presentation/providers/favorites_provider.dart';
@@ -33,10 +33,10 @@ class JobDetailPage extends ConsumerWidget {
           backgroundColor: Colors.white,
           leading: _BackButton(onBack: () => context.pop()),
         ),
-        body: Center(
+        body: const Center(
           child: Text(
             'Error al cargar el trabajo.',
-            style: const TextStyle(fontFamily: 'Poppins'),
+            style: TextStyle(fontFamily: 'Poppins'),
           ),
         ),
       ),
@@ -57,6 +57,7 @@ class JobDetailPage extends ConsumerWidget {
         }
 
         final profile = ref.watch(profileProvider).value;
+        final isMyJob = job.isMine(myId: profile?.id, myName: profile?.fullName);
         final isFav = ref.watch(favoritesProvider).contains(job.id);
         final hasApplied = ref
             .watch(applicationsProvider)
@@ -253,12 +254,12 @@ class JobDetailPage extends ConsumerWidget {
                     ),
                   ),
                   _Section(
-                    title: 'Publicado por',
-                    child: _PublisherCard(job: job),
+                    title: isMyJob ? 'Tu publicación' : 'Publicado por',
+                    child: _PublisherCard(job: job, isMyJob: isMyJob),
                   ),
                   if (!job.isPublisherVerified)
                     _Section(
-                      title: 'Estado de Verificación',
+                      title: isMyJob ? 'Verificación de tu cuenta' : 'Estado de Verificación',
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
@@ -266,34 +267,65 @@ class JobDetailPage extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: const Color(0xFFFCD34D)),
                         ),
-                        child: const Row(
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 22),
-                            SizedBox(width: 10),
+                            const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 24),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Persona con datos incompletos',
-                                    style: TextStyle(
+                                    isMyJob
+                                        ? 'Tus datos de verificación están incompletos'
+                                        : 'Persona con datos incompletos',
+                                    style: const TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
                                       color: Color(0xFFB45309),
                                     ),
                                   ),
-                                  SizedBox(height: 3),
+                                  const SizedBox(height: 3),
                                   Text(
-                                    'Este trabajo o la persona registrada no tiene los datos de verificación completos. Ten precaución y asegúrate antes de realizar cualquier trato.',
-                                    style: TextStyle(
+                                    isMyJob
+                                        ? 'Podrían demorar en encontrar, aceptar o postular a tu trabajo porque tus datos de perfil están incompletos. Completa tu verificación para dar mayor confianza a los trabajadores.'
+                                        : 'Este trabajo o la persona registrada no tiene los datos de verificación completos. Ten precaución y asegúrate antes de realizar cualquier trato.',
+                                    style: const TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 11.5,
                                       color: Color(0xFFB45309),
                                       height: 1.35,
                                     ),
                                   ),
+                                  if (isMyJob) ...[
+                                    const SizedBox(height: 10),
+                                    SizedBox(
+                                      height: 34,
+                                      child: ElevatedButton.icon(
+                                        onPressed: () => context.push('/verification'),
+                                        icon: const Icon(Icons.verified_user_rounded, size: 14),
+                                        label: const Text(
+                                          'Completar verificación',
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFFD97706),
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -302,8 +334,8 @@ class JobDetailPage extends ConsumerWidget {
                       ),
                     ),
                   _Section(
-                    title: 'Recomendaciones de seguridad',
-                    child: const _SecurityTips(),
+                    title: isMyJob ? 'Sugerencias para tu anuncio' : 'Recomendaciones de seguridad',
+                    child: _SecurityTips(isMyJob: isMyJob),
                   ),
                   const SizedBox(height: 100),
                 ]),
@@ -314,7 +346,7 @@ class JobDetailPage extends ConsumerWidget {
           bottomNavigationBar: _JobFooter(
             job: job,
             hasApplied: hasApplied,
-            isMyJob: job.isMine(myId: profile?.id, myName: profile?.fullName),
+            isMyJob: isMyJob,
             onApply: () => _showApplySheet(context, ref, job),
             onChat: () => context.push(
               '/chat/new_${job.publisherId}',
@@ -741,11 +773,25 @@ class _JobGallery extends StatefulWidget {
 }
 
 class _JobGalleryState extends State<_JobGallery> {
+  late final PageController _pageController;
   int _current = 0;
 
   @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final hasImages = widget.images.isNotEmpty;
+    final uniqueImages = widget.images.toSet().toList();
+    final hasImages = uniqueImages.isNotEmpty;
 
     return SizedBox(
       height: 260,
@@ -754,11 +800,13 @@ class _JobGalleryState extends State<_JobGallery> {
           // Imagen
           if (hasImages)
             PageView.builder(
-              itemCount: widget.images.length,
+              controller: _pageController,
+              itemCount: uniqueImages.length,
               onPageChanged: (i) => setState(() => _current = i),
+              physics: const BouncingScrollPhysics(),
               itemBuilder: (_, i) {
                 return JobEntity.buildImageWidget(
-                  widget.images[i],
+                  uniqueImages[i],
                   fit: BoxFit.cover,
                   fallbackBuilder: () => _CategoryBannerPlaceholder(category: widget.category),
                 );
@@ -813,8 +861,27 @@ class _JobGalleryState extends State<_JobGallery> {
             ),
           ),
 
-          // Contador de imágenes
-          if (widget.images.length > 1)
+          // Dots e Indicador de páginas
+          if (uniqueImages.length > 1) ...[
+            Positioned(
+              bottom: 14,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: SmoothPageIndicator(
+                  controller: _pageController,
+                  count: uniqueImages.length,
+                  effect: const ExpandingDotsEffect(
+                    dotWidth: 8,
+                    dotHeight: 8,
+                    activeDotColor: AppColors.primary,
+                    dotColor: Colors.white70,
+                    expansionFactor: 2.5,
+                    spacing: 6,
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               bottom: 14,
               right: 14,
@@ -824,11 +891,11 @@ class _JobGalleryState extends State<_JobGallery> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.55),
+                  color: Colors.black.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${_current + 1} / ${widget.images.length}',
+                  '${_current + 1} / ${uniqueImages.length}',
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 11,
@@ -838,6 +905,7 @@ class _JobGalleryState extends State<_JobGallery> {
                 ),
               ),
             ),
+          ],
         ],
       ),
     );
@@ -1081,10 +1149,12 @@ class _Section extends StatelessWidget {
 
 class _PublisherCard extends StatelessWidget {
   final dynamic job;
-  const _PublisherCard({required this.job});
+  final bool isMyJob;
+  const _PublisherCard({required this.job, this.isMyJob = false});
 
   @override
   Widget build(BuildContext context) {
+    final displayName = isMyJob ? '${job.publisherName} (Tú)' : job.publisherName;
     final initial = job.publisherName.isNotEmpty
         ? job.publisherName[0].toUpperCase()
         : 'U';
@@ -1092,14 +1162,14 @@ class _PublisherCard extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 26,
-          backgroundColor: AppColors.primaryLight,
+          backgroundColor: isMyJob ? AppColors.primary : AppColors.primaryLight,
           child: Text(
             initial,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppColors.primary,
+              color: isMyJob ? Colors.white : AppColors.primary,
             ),
           ),
         ),
@@ -1111,7 +1181,7 @@ class _PublisherCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    job.publisherName,
+                    displayName,
                     style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 15,
@@ -1120,7 +1190,25 @@ class _PublisherCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  if (job.isPublisherVerified)
+                  if (isMyJob)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                      ),
+                      child: const Text(
+                        'Tu empleo',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    )
+                  else if (job.isPublisherVerified)
                     const Icon(
                       Icons.verified_rounded,
                       color: AppColors.primary,
@@ -1147,7 +1235,16 @@ class _PublisherCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 3),
-              if (job.publisherReviews != null && job.publisherReviews! > 0)
+              if (isMyJob)
+                const Text(
+                  'Publicado por ti como empleador',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11.5,
+                    color: AppColors.textSecondary,
+                  ),
+                )
+              else if (job.publisherReviews != null && job.publisherReviews! > 0)
                 Row(
                   children: [
                     const Icon(
@@ -1183,12 +1280,13 @@ class _PublisherCard extends StatelessWidget {
   }
 }
 
-// ─── Recomendaciones de seguridad ─────────────────────────────────────────────
+// ─── Recomendaciones / Sugerencias ───────────────────────────────────────────
 
 class _SecurityTips extends StatelessWidget {
-  const _SecurityTips();
+  final bool isMyJob;
+  const _SecurityTips({this.isMyJob = false});
 
-  static const _tips = [
+  static const _workerTips = [
     'Coordina en persona en un lugar público la primera vez.',
     'No realices pagos por adelantado fuera de la plataforma.',
     'Solicita que el trabajador tenga identificación.',
@@ -1196,10 +1294,19 @@ class _SecurityTips extends StatelessWidget {
     'Deja una reseña después de completar el trabajo.',
   ];
 
+  static const _publisherTips = [
+    'Mantén la descripción detallada para recibir postulantes adecuados.',
+    'Responde con rapidez a las consultas y postulaciones de los trabajadores.',
+    'Revisa el perfil y calificaciones de quienes postulan a tu anuncio.',
+    'Coordina el presupuesto y detalles antes de iniciar la labor.',
+    'Recuerda marcar la publicación como completada al finalizar el trabajo.',
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final tips = isMyJob ? _publisherTips : _workerTips;
     return Column(
-      children: _tips.map((tip) {
+      children: tips.map((tip) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Row(
@@ -1208,7 +1315,7 @@ class _SecurityTips extends StatelessWidget {
               Container(
                 width: 22,
                 height: 22,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.successLight,
                   shape: BoxShape.circle,
                 ),
