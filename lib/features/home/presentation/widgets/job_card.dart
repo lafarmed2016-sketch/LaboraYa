@@ -112,7 +112,12 @@ class _MainCard extends StatelessWidget {
                     width: 76,
                     height: 76,
                     child: hasRealImage
-                        ? _buildImageWidget(job.images.first, catColor)
+                        ? (job.images.length > 1
+                            ? PageView.builder(
+                                itemCount: job.images.length,
+                                itemBuilder: (ctx, i) => _buildImageWidget(job.images[i], catColor),
+                              )
+                            : _buildImageWidget(job.images.first, catColor))
                         : _buildCategoryBanner(catColor),
                   ),
                 ),

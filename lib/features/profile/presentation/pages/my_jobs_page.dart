@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -341,16 +340,28 @@ class _JobTile extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: SizedBox(
-                        width: 60,
-                        height: 60,
-                        child: JobEntity.buildImageWidget(
-                          job.images.first,
-                          fit: BoxFit.cover,
-                          fallbackBuilder: () => Container(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            child: const Icon(Icons.work_rounded, color: AppColors.primary),
-                          ),
-                        ),
+                        width: 76,
+                        height: 76,
+                        child: job.images.length > 1
+                            ? PageView.builder(
+                                itemCount: job.images.length,
+                                itemBuilder: (ctx, i) => JobEntity.buildImageWidget(
+                                  job.images[i],
+                                  fit: BoxFit.cover,
+                                  fallbackBuilder: () => Container(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    child: const Icon(Icons.work_rounded, color: AppColors.primary),
+                                  ),
+                                ),
+                              )
+                            : JobEntity.buildImageWidget(
+                                job.images.first,
+                                fit: BoxFit.cover,
+                                fallbackBuilder: () => Container(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  child: const Icon(Icons.work_rounded, color: AppColors.primary),
+                                ),
+                              ),
                       ),
                     ),
                   ),
