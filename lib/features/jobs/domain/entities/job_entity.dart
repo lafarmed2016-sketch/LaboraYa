@@ -191,22 +191,15 @@ class JobEntity {
   }
 
   static String formatUrl(String rawPath) {
-    final trimmed = rawPath.trim();
+    var trimmed = rawPath.trim().replaceAll('\\', '/');
     if (trimmed.isEmpty) return trimmed;
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image')) {
       return trimmed;
     }
-    if (trimmed.startsWith('/Uploads') ||
-        trimmed.startsWith('/uploads') ||
-        trimmed.startsWith('Uploads') ||
-        trimmed.startsWith('uploads')) {
-      final clean = trimmed.startsWith('/') ? trimmed : '/$trimmed';
-      return '${EnvConfig.development.apiBaseUrl}$clean';
-    }
     if (trimmed.startsWith('/')) {
       return '${EnvConfig.development.apiBaseUrl}$trimmed';
     }
-    return trimmed;
+    return '${EnvConfig.development.apiBaseUrl}/$trimmed';
   }
 
   static Widget buildImageWidget(
@@ -248,7 +241,7 @@ class JobEntity {
   factory JobEntity.fromJson(Map<String, dynamic> json) {
     final publisher = json['publisher'] as Map<String, dynamic>? ?? json['Publisher'] as Map<String, dynamic>?;
     final category = json['category'] as Map<String, dynamic>? ?? json['Category'] as Map<String, dynamic>?;
-    final imagesList = (json['images'] ?? json['Images'] ?? json['fotos'] ?? json['Fotos']) as List?;
+    final imagesList = (json['images'] ?? json['Images'] ?? json['fotos'] ?? json['Fotos'] ?? json['jobPhotos'] ?? json['JobPhotos']) as List?;
 
     final jobId = (json['id'] ?? json['Id'] ?? json['trabajoId'] ?? json['TrabajoId'] ?? '1').toString();
     final title = (json['title'] ?? json['Title'] ?? json['titulo'] ?? json['Titulo'] ?? '').toString();
@@ -314,16 +307,26 @@ class JobEntity {
         json['ImageUrl'] ??
         json['imagenUrl'] ??
         json['ImagenUrl'] ??
+        json['fotoTrabajo'] ??
+        json['FotoTrabajo'] ??
         json['imagenPrincipalUrl'] ??
         json['ImagenPrincipalUrl'] ??
         json['foto'] ??
         json['Foto'] ??
         json['imagen'] ??
-        json['Imagen'];
+        json['Imagen'] ??
+        json['photoUrl'] ??
+        json['PhotoUrl'];
 
     List<String> imgs = [];
     if (imagesList != null && imagesList.isNotEmpty) {
-      imgs = imagesList.map((e) => formatUrl(e.toString())).where((s) => s.isNotEmpty).toList();
+      imgs = imagesList.map((e) {
+        if (e is Map) {
+          final urlStr = (e['imageUrl'] ?? e['ImageUrl'] ?? e['rutaImagen'] ?? e['url'] ?? e['path'])?.toString() ?? '';
+          return formatUrl(urlStr);
+        }
+        return formatUrl(e.toString());
+      }).where((s) => s.isNotEmpty).toList();
     } else if (rawSingleImage != null && rawSingleImage.toString().trim().isNotEmpty) {
       imgs = [formatUrl(rawSingleImage.toString())];
     }
