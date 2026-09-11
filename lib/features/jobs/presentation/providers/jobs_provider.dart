@@ -170,7 +170,15 @@ class JobsNotifier extends StateNotifier<JobsState> {
     final finalCatId = catId > 0 ? catId : 1;
 
     try {
-      final dataMap = {
+      String? base64Img;
+      if (photos.isNotEmpty) {
+        try {
+          final bytes = await photos.first.readAsBytes();
+          base64Img = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+        } catch (_) {}
+      }
+
+      final dataMap = <String, dynamic>{
         'title': title,
         'Titulo': title,
         'description': description,
@@ -179,16 +187,16 @@ class JobsNotifier extends StateNotifier<JobsState> {
         'CategoriaId': finalCatId,
         'modality': modality,
         'TipoPago': modality.toUpperCase(),
-        'address': address,
-        'Direccion': address,
+        'address': address ?? '',
+        'Direccion': address ?? '',
         'Ciudad': 'Lima, Perú',
-        'latitude': latitude,
-        'Latitud': latitude,
-        'longitude': longitude,
-        'Longitud': longitude,
-        'budgetMin': budgetMin,
-        'Presupuesto': budgetMin,
-        'budgetMax': budgetMax ?? budgetMin,
+        'latitude': latitude ?? 0.0,
+        'Latitud': latitude ?? 0.0,
+        'longitude': longitude ?? 0.0,
+        'Longitud': longitude ?? 0.0,
+        'budgetMin': budgetMin ?? 0.0,
+        'Presupuesto': budgetMin ?? 0.0,
+        'budgetMax': budgetMax ?? budgetMin ?? 0.0,
         'budgetFixed': true,
         'isUrgent': isUrgent,
         'EsUrgente': isUrgent,
@@ -196,12 +204,14 @@ class JobsNotifier extends StateNotifier<JobsState> {
         'duration': duration,
         'workersNeeded': workersNeeded,
         'publishNow': true,
+        if (base64Img != null) 'ImagenUrl': base64Img,
+        if (base64Img != null) 'imageUrl': base64Img,
       };
 
       bool isSuccess = false;
       dynamic response;
 
-      // Cache locally chosen photographs for this job post
+      // Cache localmente las fotos de este trabajo
       if (photos.isNotEmpty) {
         _localJobImages[title] = photos.map((f) => f.path).toList();
       }
@@ -216,12 +226,6 @@ class JobsNotifier extends StateNotifier<JobsState> {
           });
 
           final photoFile = photos.first;
-          try {
-            final bytes = await photoFile.readAsBytes();
-            final base64Str = base64Encode(bytes);
-            formMap['ImagenUrl'] = 'data:image/jpeg;base64,$base64Str';
-          } catch (_) {}
-
           final multipartFile = await MultipartFile.fromFile(
             photoFile.path,
             filename: 'job_photo_${DateTime.now().millisecondsSinceEpoch}.jpg',
@@ -245,8 +249,7 @@ class JobsNotifier extends StateNotifier<JobsState> {
             }
           }
         } catch (e) {
-          // If Multipart upload fails/isn't supported by the route, print and fall back
-          state = state.copyWith(error: 'Advertencia: no se pudieron cargar las fotos en el servidor: $e');
+          state = state.copyWith(error: 'Advertencia: no se pudieron cargar las fotos via FormData: $e');
         }
       }
 
