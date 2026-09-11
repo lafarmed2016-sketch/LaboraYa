@@ -320,10 +320,11 @@ class JobEntity {
     );
 
     final pubId =
-        (publisher?['id'] ?? publisher?['Id'] ?? json['publisherId'] ?? json['PublisherId'] ?? json['EmployerId'] ?? json['employerId'] ?? json['empleadorId'] ?? '1')
+        (publisher?['id'] ?? publisher?['Id'] ?? json['publisherId'] ?? json['PublisherId'] ?? json['EmployerId'] ?? json['employerId'] ?? json['empleadorId'] ?? json['EmpleadorId'] ?? '1')
             .toString();
     final rawPubName =
         (json['empleadorNombre'] ??
+                json['EmpleadorNombre'] ??
                 json['EmployerName'] ??
                 '${publisher?['firstName'] ?? publisher?['FirstName'] ?? ''} ${publisher?['lastName'] ?? publisher?['LastName'] ?? ''}'
                     .trim())

@@ -214,6 +214,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
       );
       if (!mounted) return;
       if (ok) {
+        ref.invalidate(myJobsProvider);
         _showSuccess();
       } else {
         final err = ref.read(jobsProvider).error ?? 'No se pudo publicar el trabajo en el servidor.';
