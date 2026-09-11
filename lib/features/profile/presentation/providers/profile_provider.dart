@@ -23,6 +23,7 @@ class UserProfile {
   final int? completedJobs;
   final bool isVerified;
   final double? hourlyRate;
+  final DateTime? createdAt;
 
   UserProfile({
     required this.id,
@@ -43,11 +44,13 @@ class UserProfile {
     this.completedJobs,
     this.isVerified = false,
     this.hourlyRate,
+    this.createdAt,
   });
 
   String get fullName => '$firstName $lastName'.trim();
   double get rating => workerRating ?? 0.0;
   int get reviews => workerReviews ?? 0;
+  String get memberSinceYear => (createdAt ?? DateTime.now()).year.toString();
 }
 
 final profileProvider = FutureProvider<UserProfile?>((ref) async {
@@ -93,6 +96,9 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
         u['avatar'] ??
         u['Avatar'];
 
+    final rawDate = u['fechaCreacion'] ?? u['FechaCreacion'] ?? u['fechaRegistro'] ?? u['FechaRegistro'] ?? u['createdAt'] ?? u['CreatedAt'];
+    final createdAtDate = rawDate != null ? DateTime.tryParse(rawDate.toString()) : null;
+
     return UserProfile(
       id: id,
       email: (u['correo'] ?? u['email'] ?? '').toString(),
@@ -114,6 +120,7 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
       workerReviews: u['resenasCount'] ?? u['workerReviews'],
       completedJobs: u['trabajosCompletadosCount'] ?? u['completedJobs'],
       hourlyRate: (u['precioHora'] as num?)?.toDouble(),
+      createdAt: createdAtDate,
     );
   } catch (_) {
     return null;

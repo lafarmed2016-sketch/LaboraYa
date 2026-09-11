@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -198,11 +197,22 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _buildBody(BuildContext context, UserProfile? profile) {
-    final name = profile?.fullName ?? 'Juan Pérez';
+    final name = profile?.fullName ?? 'Usuario';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
     final occupation = (profile?.bio?.isNotEmpty == true)
         ? profile!.bio!
         : 'Trabajador independiente';
+
+    final myJobsAsync = ref.watch(myJobsProvider);
+    final activeJobsCount = myJobsAsync.value?.where((j) => j.status.toUpperCase() == 'OPEN' || j.status.toUpperCase() == 'PUBLISHED' || j.status.toUpperCase() == 'ACTIVO').length ?? 0;
+    final ratingStr = (profile?.reviews ?? 0) > 0 
+        ? '${profile!.rating.toStringAsFixed(1)} (${profile.reviews})'
+        : '0.0 (0)';
+    final statRatingStr = (profile != null && profile.reviews > 0)
+        ? profile.rating.toStringAsFixed(1)
+        : '0.0';
+    final memberSinceYear = profile?.memberSinceYear ?? DateTime.now().year;
+    final completedJobsCount = profile?.completedJobs ?? 0;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -340,9 +350,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             color: Color(0xFFF59E0B),
                           ),
                           const SizedBox(width: 4),
-                          const Text(
-                            '4.8 (32)',
-                            style: TextStyle(
+                          Text(
+                            ratingStr,
+                            style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -356,9 +366,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             color: Color(0xFF94A3B8),
                           ),
                           const SizedBox(width: 4),
-                          const Text(
-                            'Miembro desde 2022',
-                            style: TextStyle(
+                          Text(
+                            'Miembro desde $memberSinceYear',
+                            style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 11,
                               color: Color(0xFF64748B),
@@ -373,7 +383,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             const SizedBox(height: 24),
 
-            // ── 3 Tarjetas de Estadísticas (Idénticas al Mockup) ─────
+            // ── 3 Tarjetas de Estadísticas (Dinámicas) ─────
             Container(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
               decoration: BoxDecoration(
@@ -385,7 +395,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 children: [
                   _StatItem(
                     label: 'Trabajos completados',
-                    value: '48',
+                    value: '$completedJobsCount',
                   ),
                   Container(
                     width: 1,
@@ -394,7 +404,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   ),
                   _StatItem(
                     label: 'Trabajos activos',
-                    value: '3',
+                    value: '$activeJobsCount',
                   ),
                   Container(
                     width: 1,
@@ -403,7 +413,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   ),
                   _StatItem(
                     label: 'Calificación',
-                    value: '4.8',
+                    value: statRatingStr,
                   ),
                 ],
               ),
