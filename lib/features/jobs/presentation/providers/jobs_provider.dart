@@ -211,18 +211,21 @@ class JobsNotifier extends StateNotifier<JobsState> {
             }
           });
 
-          final photoFile = photos.first;
-          final multipartFile = await MultipartFile.fromFile(
-            photoFile.path,
-            filename: 'job_photo_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          );
+          final multipartFiles = <MultipartFile>[];
+          for (int i = 0; i < photos.length; i++) {
+            final f = photos[i];
+            final mf = await MultipartFile.fromFile(
+              f.path,
+              filename: 'job_photo_${i}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            );
+            multipartFiles.add(mf);
+          }
 
           final formData = FormData.fromMap({
             ...formMap,
-            'file': multipartFile,
-            'files': [multipartFile],
-            'images': [multipartFile],
-            'foto': multipartFile,
+            'files': multipartFiles,
+            'file': multipartFiles.first,
+            'foto': multipartFiles.first,
             if (base64Img != null) 'ImagenUrl': base64Img,
             if (base64Img != null) 'imageUrl': base64Img,
           });

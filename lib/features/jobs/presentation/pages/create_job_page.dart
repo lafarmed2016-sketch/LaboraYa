@@ -105,7 +105,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
   LatLng? _location;
   String? _locationLabel;
   bool _gpsLoading  = false;
-  File? _photo;
+  List<File> _photos = [];
   bool _isLoading   = false;
   String? _error;
   AutovalidateMode _autovalidate = AutovalidateMode.disabled;
@@ -160,10 +160,27 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
     }
   }
 
-  // ── Foto ───────────────────────────────────────────────────────
-  Future<void> _pickPhoto() async {
-    final file = await ImagePickerService.pickSingleImage(context);
-    if (file != null) setState(() => _photo = file);
+  // ── Fotos Múltiples ─────────────────────────────────────────────
+  Future<void> _pickPhotos() async {
+    final list = await ImagePickerService.pickMultipleImages();
+    if (list.isNotEmpty) {
+      setState(() {
+        for (final file in list) {
+          if (!_photos.any((p) => p.path == file.path)) {
+            _photos.add(file);
+          }
+        }
+      });
+    } else {
+      final single = await ImagePickerService.pickSingleImage(context);
+      if (single != null) {
+        setState(() {
+          if (!_photos.any((p) => p.path == single.path)) {
+            _photos.add(single);
+          }
+        });
+      }
+    }
   }
 
   // ── Publicar ───────────────────────────────────────────────────
@@ -195,7 +212,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
         isUrgent: false,
         materials: 'TO_COORDINATE',
         workersNeeded: 1,
-        photos: _photo != null ? [_photo!] : [],
+        photos: _photos,
       );
       if (!mounted) return;
       if (ok) {
@@ -456,85 +473,83 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                         ),
                         const SizedBox(height: 22),
 
-                        // 5 ── ¿Deseas agregar una foto? ───────
-                        const _Question(number: '5', text: '¿Deseas agregar una foto?'),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: _pickPhoto,
+                        // 5 ── ¿Deseas agregar fotos del trabajo? ───────
+                        const _Question(number: '5', text: '¿Deseas agregar fotos del trabajo?', optional: true),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 100,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              // Botón Agregar Fotos
+                              GestureDetector(
+                                onTap: _pickPhotos,
                                 child: Container(
-                                  height: 90,
+                                  width: 100,
+                                  height: 100,
+                                  margin: const EdgeInsets.only(right: 12),
                                   decoration: BoxDecoration(
-                                    color: _photo != null
-                                        ? Colors.transparent
-                                        : AppColors.background,
+                                    color: AppColors.background,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: AppColors.border),
+                                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.6), width: 1.5),
                                   ),
-                                  child: _photo != null
-                                      ? ClipRRect(
-                                          borderRadius: BorderRadius.circular(13),
-                                          child: Image.file(_photo!,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity))
-                                      : const Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.add_photo_alternate_outlined,
-                                                color: AppColors.textHint, size: 28),
-                                            SizedBox(height: 4),
-                                            Text('Agregar foto',
-                                                style: TextStyle(
-                                                    fontFamily: 'Poppins',
-                                                    fontSize: 12,
-                                                    color: AppColors.textHint)),
-                                          ],
-                                        ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _photo = null),
-                                child: Container(
-                                  height: 90,
-                                  decoration: BoxDecoration(
-                                    color: _photo == null
-                                        ? AppColors.background
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: _photo == null
-                                          ? AppColors.primary
-                                          : AppColors.border,
-                                    ),
-                                  ),
-                                  child: Column(
+                                  child: const Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.close_rounded,
-                                          color: _photo == null
-                                              ? AppColors.primary
-                                              : AppColors.textHint,
-                                          size: 24),
-                                      const SizedBox(height: 4),
-                                      Text('Omitir',
-                                          style: TextStyle(
-                                              fontFamily: 'Poppins',
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: _photo == null
-                                                  ? AppColors.primary
-                                                  : AppColors.textHint)),
+                                      Icon(Icons.add_a_photo_rounded, color: AppColors.primary, size: 28),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        '+ Fotos',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                              // Lista de fotos seleccionadas
+                              ..._photos.asMap().entries.map((entry) {
+                                final idx = entry.key;
+                                final f = entry.value;
+                                return Stack(
+                                  children: [
+                                    Container(
+                                      width: 100,
+                                      height: 100,
+                                      margin: const EdgeInsets.only(right: 12),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(color: AppColors.border),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(13),
+                                        child: Image.file(f, fit: BoxFit.cover, width: 100, height: 100),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 4,
+                                      right: 16,
+                                      child: GestureDetector(
+                                        onTap: () => setState(() => _photos.removeAt(idx)),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                           decoration: BoxDecoration(
+                                             color: Colors.black.withValues(alpha: 0.7),
+                                             shape: BoxShape.circle,
+                                           ),
+                                          child: const Icon(Icons.close, color: Colors.white, size: 14),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 22),
 
