@@ -24,6 +24,7 @@ class _MyJobsPageState extends ConsumerState<MyJobsPage>
     _tab.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(jobsProvider.notifier).loadJobs(refresh: true);
+      ref.invalidate(myJobsProvider);
     });
   }
 
