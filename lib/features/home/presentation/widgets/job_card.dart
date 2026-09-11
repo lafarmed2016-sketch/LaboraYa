@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
+import 'package:laboraya_app/core/network/api_client.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 // ─── JobCard ──────────────────────────────────────────────────────────────────
@@ -810,7 +812,9 @@ class _SocialBarState extends State<_SocialBar> with SingleTickerProviderStateMi
 
 // ─── Modal de Comentarios ─────────────────────────────────────────────────────
 
-class JobCommentsBottomSheet extends StatefulWidget {
+// ─── Modal de Comentarios ─────────────────────────────────────────────────────
+
+class JobCommentsBottomSheet extends ConsumerStatefulWidget {
   final JobEntity job;
   final VoidCallback onCommentAdded;
 
@@ -821,31 +825,20 @@ class JobCommentsBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<JobCommentsBottomSheet> createState() => _JobCommentsBottomSheetState();
+  ConsumerState<JobCommentsBottomSheet> createState() => _JobCommentsBottomSheetState();
 }
 
-class _JobCommentsBottomSheetState extends State<JobCommentsBottomSheet> {
+class _JobCommentsBottomSheetState extends ConsumerState<JobCommentsBottomSheet> {
   final TextEditingController _commentCtrl = TextEditingController();
-  final List<Map<String, String>> _comments = [
-    {
-      'user': 'Carlos Mendoza',
-      'avatar': 'C',
-      'text': '¡Hola! ¿Aún está disponible el trabajo?',
-      'time': 'Hace 10 min'
-    },
-    {
-      'user': 'María Elena',
-      'avatar': 'M',
-      'text': 'Buenas tardes, estoy interesada y cuento con disponibilidad inmediata.',
-      'time': 'Hace 25 min'
-    },
-    {
-      'user': 'Jorge Ramírez',
-      'avatar': 'J',
-      'text': 'Tengo herramientas propias y años de experiencia.',
-      'time': 'Hace 1 hora'
-    },
-  ];
+  List<Map<String, dynamic>> _comments = [];
+  bool _isLoading = true;
+  bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchComments();
+  }
 
   @override
   void dispose() {
@@ -853,20 +846,70 @@ class _JobCommentsBottomSheetState extends State<JobCommentsBottomSheet> {
     super.dispose();
   }
 
-  void _sendComment() {
-    final text = _commentCtrl.text.trim();
-    if (text.isEmpty) return;
+  Future<void> _fetchComments() async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.get('/api/v2/TrabajoV2/${widget.job.id}/comentarios');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['datos'] is List) {
+          final list = (data['datos'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          if (mounted) {
+            setState(() {
+              _comments = list;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
 
-    setState(() {
-      _comments.insert(0, {
-        'user': 'Tú',
-        'avatar': 'T',
-        'text': text,
-        'time': 'Ahora mismo',
+  Future<void> _sendComment() async {
+    final text = _commentCtrl.text.trim();
+    if (text.isEmpty || _isSending) return;
+
+    setState(() => _isSending = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.post('/api/v2/TrabajoV2/comentarios', data: {
+        'trabajoId': int.tryParse(widget.job.id) ?? 1,
+        'TrabajoId': int.tryParse(widget.job.id) ?? 1,
+        'texto': text,
+        'Texto': text,
       });
-      _commentCtrl.clear();
-    });
-    widget.onCommentAdded();
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['datos'] is List) {
+          final list = (data['datos'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          if (mounted) {
+            setState(() {
+              _comments = list;
+              _commentCtrl.clear();
+              _isSending = false;
+            });
+          }
+          widget.onCommentAdded();
+          return;
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al enviar comentario: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
   }
 
   @override
@@ -916,72 +959,87 @@ class _JobCommentsBottomSheetState extends State<JobCommentsBottomSheet> {
             ),
           ),
 
-          // Lista de Comentarios
+          // Lista de Comentarios en tiempo real desde SQL
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: _comments.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (ctx, i) {
-                final c = _comments[i];
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                      child: Text(
-                        c['avatar']!,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                c['user']!,
-                                style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF0F172A),
-                                ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                : _comments.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.chat_bubble_outline_rounded, size: 42, color: Color(0xFFCBD5E1)),
+                            SizedBox(height: 8),
+                            Text(
+                              'Sé el primero en comentar esta publicación',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                color: Color(0xFF64748B),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                c['time']!,
-                                style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 10.5,
-                                  color: Color(0xFF94A3B8),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: _comments.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (ctx, i) {
+                          final c = _comments[i];
+                          final userName = (c['usuarioNombre'] ?? c['UsuarioNombre'] ?? 'Usuario').toString();
+                          final userFoto = (c['usuarioFoto'] ?? c['UsuarioFoto'])?.toString();
+                          final commentText = (c['texto'] ?? c['Texto'] ?? '').toString();
+                          final avatarProvider = JobEntity.getAvatarImageProvider(userFoto);
+
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 18,
+                                backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                                backgroundImage: avatarProvider,
+                                child: avatarProvider == null
+                                    ? Text(
+                                        userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                                        style: const TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      userName,
+                                      style: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      commentText,
+                                      style: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 12,
+                                        color: Color(0xFF334155),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            c['text']!,
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 12,
-                              color: Color(0xFF334155),
-                            ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
           ),
 
           // Input de Comentario al pie (keyboard responsive)
@@ -1026,10 +1084,16 @@ class _JobCommentsBottomSheetState extends State<JobCommentsBottomSheet> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _sendComment,
-                  icon: const Icon(Icons.send_rounded, color: AppColors.primary),
-                ),
+                _isSending
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                      )
+                    : IconButton(
+                        onPressed: _sendComment,
+                        icon: const Icon(Icons.send_rounded, color: AppColors.primary),
+                      ),
               ],
             ),
           ),
