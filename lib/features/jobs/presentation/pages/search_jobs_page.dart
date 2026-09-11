@@ -668,25 +668,15 @@ class _SearchJobTile extends ConsumerWidget {
   Widget _buildImage(BuildContext context) {
     final catColor = _categoryColor(job.categoryName);
     if (job.images.isNotEmpty) {
-      final img = job.images.first;
-      final formattedImg = JobEntity.formatUrl(img);
-      if (formattedImg.startsWith('http')) {
-        return Image.network(
-          formattedImg,
-          width: 96,
-          height: 96,
+      return SizedBox(
+        width: 96,
+        height: 96,
+        child: JobEntity.buildImageWidget(
+          job.images.first,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildPlaceholder(catColor),
-        );
-      } else {
-        return Image.file(
-          File(img),
-          width: 96,
-          height: 96,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildPlaceholder(catColor),
-        );
-      }
+          fallbackBuilder: () => _buildPlaceholder(catColor),
+        ),
+      );
     }
     return _buildPlaceholder(catColor);
   }

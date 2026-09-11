@@ -105,24 +105,11 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
   }
 
   Widget _buildImageWidget(String path, Color catColor) {
-    final formatted = JobEntity.formatUrl(path);
-    if (formatted.startsWith('http')) {
-      return Image.network(
-        formatted,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, __, ___) => _buildCategoryBanner(catColor),
-      );
-    } else {
-      return Image.file(
-        File(path),
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, __, ___) => _buildCategoryBanner(catColor),
-      );
-    }
+    return JobEntity.buildImageWidget(
+      path,
+      fit: BoxFit.cover,
+      fallbackBuilder: () => _buildCategoryBanner(catColor),
+    );
   }
 
   Widget _buildCategoryBanner(Color catColor) {

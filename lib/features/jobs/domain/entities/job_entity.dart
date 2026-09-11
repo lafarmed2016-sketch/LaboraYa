@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:laboraya_app/app/config/env_config.dart';
 
 class JobEntity {
@@ -204,6 +207,42 @@ class JobEntity {
       return '${EnvConfig.development.apiBaseUrl}$trimmed';
     }
     return trimmed;
+  }
+
+  static Widget buildImageWidget(
+    String path, {
+    BoxFit fit = BoxFit.cover,
+    Widget Function()? fallbackBuilder,
+  }) {
+    final formatted = formatUrl(path);
+    if (formatted.isEmpty) {
+      return fallbackBuilder?.call() ?? const SizedBox.shrink();
+    }
+    if (formatted.startsWith('data:image')) {
+      try {
+        final commaIdx = formatted.indexOf(',');
+        final base64Str = commaIdx >= 0 ? formatted.substring(commaIdx + 1) : formatted;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: fit,
+          errorBuilder: (_, __, ___) => fallbackBuilder?.call() ?? const SizedBox.shrink(),
+        );
+      } catch (_) {
+        return fallbackBuilder?.call() ?? const SizedBox.shrink();
+      }
+    }
+    if (formatted.startsWith('http')) {
+      return Image.network(
+        formatted,
+        fit: fit,
+        errorBuilder: (_, __, ___) => fallbackBuilder?.call() ?? const SizedBox.shrink(),
+      );
+    }
+    return Image.file(
+      File(path),
+      fit: fit,
+      errorBuilder: (_, __, ___) => fallbackBuilder?.call() ?? const SizedBox.shrink(),
+    );
   }
 
   factory JobEntity.fromJson(Map<String, dynamic> json) {

@@ -343,23 +343,14 @@ class _JobTile extends StatelessWidget {
                       child: SizedBox(
                         width: 60,
                         height: 60,
-                        child: JobEntity.formatUrl(job.images.first).startsWith('http')
-                            ? Image.network(
-                                JobEntity.formatUrl(job.images.first),
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                  child: const Icon(Icons.work_rounded, color: AppColors.primary),
-                                ),
-                              )
-                            : Image.file(
-                                File(job.images.first),
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                  child: const Icon(Icons.work_rounded, color: AppColors.primary),
-                                ),
-                              ),
+                        child: JobEntity.buildImageWidget(
+                          job.images.first,
+                          fit: BoxFit.cover,
+                          fallbackBuilder: () => Container(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            child: const Icon(Icons.work_rounded, color: AppColors.primary),
+                          ),
+                        ),
                       ),
                     ),
                   ),
