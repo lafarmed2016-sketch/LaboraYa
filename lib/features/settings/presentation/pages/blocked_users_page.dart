@@ -4,6 +4,7 @@ import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/core/network/api_client.dart';
 import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/features/settings/presentation/providers/settings_provider.dart';
+import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 class BlockedUsersPage extends ConsumerStatefulWidget {
   const BlockedUsersPage({super.key});
@@ -231,24 +232,25 @@ class _BlockedUsersPageState extends ConsumerState<BlockedUsersPage> {
                                       width: 2,
                                     ),
                                   ),
-                                  child: CircleAvatar(
-                                    radius: 26,
-                                    backgroundColor: AppColors.error.withValues(alpha: 0.1),
-                                    backgroundImage: u.avatar != null && u.avatar!.startsWith('http')
-                                        ? NetworkImage(u.avatar!)
-                                        : null,
-                                    child: u.avatar == null || !u.avatar!.startsWith('http')
-                                        ? Text(
-                                            u.firstName.isNotEmpty ? u.firstName[0].toUpperCase() : 'U',
-                                            style: const TextStyle(
-                                              fontFamily: 'Poppins',
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.error,
-                                            ),
-                                          )
-                                        : null,
-                                  ),
+                                  child: () {
+                                    final avatarProv = JobEntity.getAvatarImageProvider(u.avatar);
+                                    return CircleAvatar(
+                                      radius: 26,
+                                      backgroundColor: AppColors.error.withValues(alpha: 0.1),
+                                      backgroundImage: avatarProv,
+                                      child: avatarProv == null
+                                          ? Text(
+                                              u.firstName.isNotEmpty ? u.firstName[0].toUpperCase() : 'U',
+                                              style: const TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.error,
+                                              ),
+                                            )
+                                          : null,
+                                    );
+                                  }(),
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(

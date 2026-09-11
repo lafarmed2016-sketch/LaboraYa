@@ -10,6 +10,7 @@ import 'package:laboraya_app/core/services/image_picker_service.dart';
 import 'package:laboraya_app/core/storage/secure_storage.dart';
 import 'package:laboraya_app/core/widgets/app_ui_components.dart';
 import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -273,14 +274,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     if (_avatarFile != null) {
       avatarImageProvider = FileImage(_avatarFile!);
     } else {
-      final avatarUrl = profile?.avatar;
-      if (avatarUrl != null && avatarUrl.isNotEmpty) {
-        if (avatarUrl.startsWith('/') || !avatarUrl.startsWith('http')) {
-          avatarImageProvider = FileImage(File(avatarUrl));
-        } else {
-          avatarImageProvider = NetworkImage(avatarUrl);
-        }
-      }
+      avatarImageProvider = JobEntity.getAvatarImageProvider(profile?.avatar);
     }
 
     return PopScope(

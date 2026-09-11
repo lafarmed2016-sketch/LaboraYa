@@ -358,25 +358,26 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
                             ),
                           ],
                         ),
-                        child: CircleAvatar(
-                          radius: 24,
-                          backgroundColor: AppColors.primary,
-                          backgroundImage: widget.job.publisherAvatar != null
-                              ? NetworkImage(widget.job.publisherAvatar!)
-                              : null,
-                          child: widget.job.publisherAvatar == null
-                              ? Text(
-                                  widget.job.publisherName.isNotEmpty
-                                      ? widget.job.publisherName[0].toUpperCase()
-                                      : 'U',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                                )
-                              : null,
-                        ),
+                        child: () {
+                          final avatarProvider = JobEntity.getAvatarImageProvider(widget.job.publisherAvatar);
+                          return CircleAvatar(
+                            radius: 24,
+                            backgroundColor: AppColors.primary,
+                            backgroundImage: avatarProvider,
+                            child: avatarProvider == null
+                                ? Text(
+                                    widget.job.publisherName.isNotEmpty
+                                        ? widget.job.publisherName[0].toUpperCase()
+                                        : 'U',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  )
+                                : null,
+                          );
+                        }(),
                       ),
                       if (widget.job.isPublisherVerified)
                         Positioned(

@@ -202,6 +202,28 @@ class JobEntity {
     return '${EnvConfig.development.apiBaseUrl}/$trimmed';
   }
 
+  static ImageProvider? getAvatarImageProvider(String? rawUrl) {
+    if (rawUrl == null || rawUrl.trim().isEmpty) return null;
+    final formatted = formatUrl(rawUrl);
+    if (formatted.isEmpty) return null;
+    if (formatted.startsWith('data:image')) {
+      try {
+        final commaIdx = formatted.indexOf(',');
+        final base64Str = commaIdx >= 0 ? formatted.substring(commaIdx + 1) : formatted;
+        return MemoryImage(base64Decode(base64Str));
+      } catch (_) {
+        return null;
+      }
+    }
+    if (formatted.startsWith('http')) {
+      return NetworkImage(formatted);
+    }
+    if (File(formatted).existsSync()) {
+      return FileImage(File(formatted));
+    }
+    return null;
+  }
+
   static Widget buildImageWidget(
     String path, {
     BoxFit fit = BoxFit.cover,

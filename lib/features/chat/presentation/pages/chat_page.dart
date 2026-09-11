@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/features/chat/presentation/providers/chat_provider.dart';
+import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   final String conversationId;
@@ -186,24 +187,25 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           const SizedBox(width: 8),
           Stack(
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: AppColors.primaryLight,
-                backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
-                    ? NetworkImage(avatarUrl)
-                    : null,
-                child: (avatarUrl == null || avatarUrl.isEmpty)
-                    ? Text(
-                        initial,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                          fontFamily: 'Poppins',
-                        ),
-                      )
-                    : null,
-              ),
+              () {
+                final avatarProv = JobEntity.getAvatarImageProvider(avatarUrl);
+                return CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppColors.primaryLight,
+                  backgroundImage: avatarProv,
+                  child: avatarProv == null
+                      ? Text(
+                          initial,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                            fontFamily: 'Poppins',
+                          ),
+                        )
+                      : null,
+                );
+              }(),
               if (isOnline)
                 Positioned(
                   right: 0,
