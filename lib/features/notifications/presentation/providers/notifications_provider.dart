@@ -42,15 +42,14 @@ class NotificationsNotifier extends StateNotifier<List<NotificationData>> {
         state = list
             .map(
               (n) => NotificationData(
-                id: (n['id'] ?? n['notificacionId'] ?? '1').toString(),
-                type: (n['type'] ?? n['tipo'] ?? 'GENERAL').toString(),
-                title: (n['title'] ?? n['titulo'] ?? 'Notificación').toString(),
-                body: (n['body'] ?? n['cuerpo'] ?? '').toString(),
-                data: n['data']?.toString(),
-                isRead: n['esLeido'] == true || n['isRead'] == true,
-                createdAt:
-                    DateTime.tryParse(
-                      (n['createdAt'] ?? n['fechaCreacion'] ?? '').toString(),
+                id: (n['id'] ?? n['Id'] ?? n['notificacionId'] ?? n['NotificacionId'] ?? '1').toString(),
+                type: (n['type'] ?? n['Type'] ?? n['tipo'] ?? n['Tipo'] ?? 'GENERAL').toString(),
+                title: (n['title'] ?? n['Title'] ?? n['titulo'] ?? n['Titulo'] ?? 'Notificación').toString(),
+                body: (n['body'] ?? n['Body'] ?? n['cuerpo'] ?? n['Cuerpo'] ?? '').toString(),
+                data: (n['data'] ?? n['Data'] ?? n['relatedId'] ?? n['RelatedId'])?.toString(),
+                isRead: n['esLeido'] == true || n['isRead'] == true || n['IsRead'] == true || n['IsRead'] == 1 || n['isRead'] == 1,
+                createdAt: DateTime.tryParse(
+                      (n['createdAt'] ?? n['CreatedAt'] ?? n['fechaCreacion'] ?? n['FechaCreacion'] ?? '').toString(),
                     ) ??
                     DateTime.now(),
               ),

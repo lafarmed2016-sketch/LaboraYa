@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:timeago/timeago.dart' as timeago;
 import 'package:laboraya_app/core/constants/app_colors.dart';
-import 'package:laboraya_app/core/services/mock_data_service.dart';
+import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
 
 class NotificationsPage extends ConsumerStatefulWidget {
   const NotificationsPage({super.key});
@@ -12,30 +13,16 @@ class NotificationsPage extends ConsumerStatefulWidget {
 }
 
 class _NotificationsPageState extends ConsumerState<NotificationsPage> {
-  late List<MockNotification> _notifications;
-
   @override
   void initState() {
     super.initState();
-    _notifications = [];
+    Future.microtask(() {
+      ref.read(notificationsProvider.notifier).load();
+    });
   }
 
   void _markAllRead() {
-    setState(() {
-      _notifications = _notifications
-          .map(
-            (n) => MockNotification(
-              id: n.id,
-              type: n.type,
-              title: n.title,
-              body: n.body,
-              time: n.time,
-              isRead: true,
-              relatedId: n.relatedId,
-            ),
-          )
-          .toList();
-    });
+    ref.read(notificationsProvider.notifier).markAllRead();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Todas marcadas como leídas'),
@@ -44,77 +31,47 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     );
   }
 
-  void _onTapNotification(MockNotification notif) {
-    // Marcar como leída
-    setState(() {
-      final index = _notifications.indexWhere((n) => n.id == notif.id);
-      if (index >= 0) {
-        _notifications[index] = MockNotification(
-          id: notif.id,
-          type: notif.type,
-          title: notif.title,
-          body: notif.body,
-          time: notif.time,
-          isRead: true,
-          relatedId: notif.relatedId,
-        );
-      }
-    });
+  void _onTapNotification(NotificationData notif) {
+    if (!notif.isRead) {
+      ref.read(notificationsProvider.notifier).markRead(notif.id);
+    }
 
-    // Navegar según tipo
-    if (notif.relatedId != null) {
-      switch (notif.type) {
-        case 'application':
-        case 'accepted':
-        case 'completed':
-          context.push('/jobs/${notif.relatedId}');
-          break;
-        case 'message':
-          context.push('/chat/${notif.relatedId}');
-          break;
-        default:
-          break;
+    if (notif.data != null && notif.data!.isNotEmpty) {
+      final typeUpper = notif.type.toUpperCase();
+      if (typeUpper.contains('CHAT') || typeUpper.contains('MESSAGE')) {
+        context.push('/chat/${notif.data}');
+      } else if (typeUpper.contains('JOB') || typeUpper.contains('APPLICATION')) {
+        context.push('/jobs/${notif.data}');
       }
     }
   }
 
   IconData _getIcon(String type) {
-    switch (type) {
-      case 'application':
-        return Icons.person_add;
-      case 'accepted':
-        return Icons.check_circle;
-      case 'message':
-        return Icons.chat_bubble;
-      case 'review':
-        return Icons.star;
-      case 'completed':
-        return Icons.task_alt;
-      default:
-        return Icons.notifications;
-    }
+    final t = type.toUpperCase();
+    if (t.contains('APPLICATION')) return Icons.person_add;
+    if (t.contains('ACCEPTED')) return Icons.check_circle;
+    if (t.contains('CHAT') || t.contains('MESSAGE')) return Icons.chat_bubble;
+    if (t.contains('REVIEW')) return Icons.star;
+    if (t.contains('COMPLETED')) return Icons.task_alt;
+    if (t.contains('JOB_SAVED') || t.contains('FAVORITE')) return Icons.bookmark_added;
+    return Icons.notifications;
   }
 
   Color _getColor(String type) {
-    switch (type) {
-      case 'application':
-        return AppColors.success;
-      case 'accepted':
-        return AppColors.primary;
-      case 'message':
-        return AppColors.info;
-      case 'review':
-        return AppColors.star;
-      case 'completed':
-        return AppColors.primary;
-      default:
-        return AppColors.textHint;
-    }
+    final t = type.toUpperCase();
+    if (t.contains('APPLICATION')) return AppColors.success;
+    if (t.contains('ACCEPTED')) return AppColors.primary;
+    if (t.contains('CHAT') || t.contains('MESSAGE')) return AppColors.info;
+    if (t.contains('REVIEW')) return AppColors.star;
+    if (t.contains('COMPLETED')) return AppColors.primary;
+    if (t.contains('JOB_SAVED') || t.contains('FAVORITE')) return const Color(0xFFF59E0B);
+    return AppColors.textHint;
   }
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = _notifications.where((n) => !n.isRead).length;
+    final notifications = ref.watch(notificationsProvider);
+    final unreadCount = ref.watch(notificationsProvider.notifier).unreadCount;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -135,7 +92,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
             ),
         ],
       ),
-      body: _notifications.isEmpty
+      body: notifications.isEmpty
           ? const Center(
               child: Text(
                 'Sin notificaciones',
@@ -144,11 +101,13 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
             )
           : ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _notifications.length,
+              itemCount: notifications.length,
               separatorBuilder: (_, __) => const Divider(indent: 72, height: 1),
               itemBuilder: (context, index) {
-                final notif = _notifications[index];
+                final notif = notifications[index];
                 final color = _getColor(notif.type);
+                final timeStr = timeago.format(notif.createdAt, locale: 'es');
+
                 return Material(
                   color: notif.isRead
                       ? Colors.white
@@ -198,7 +157,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  notif.time,
+                                  timeStr,
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: AppColors.textHint,
