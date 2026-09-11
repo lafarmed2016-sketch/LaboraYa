@@ -410,6 +410,18 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
                   label: isFavorite ? 'Guardado' : 'Guardar',
                   onTap: () {
                     ref.read(favoritesProvider.notifier).toggle(widget.job.id);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          !isFavorite
+                              ? '📌 Guardado en tus favoritos. ¡Le avisamos al empleador!'
+                              : 'Eliminado de tus favoritos',
+                          style: const TextStyle(fontFamily: 'Poppins'),
+                        ),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(height: 18),
