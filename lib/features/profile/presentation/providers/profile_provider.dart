@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/core/network/api_client.dart';
 import 'package:laboraya_app/core/storage/secure_storage.dart';
+import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 class UserProfile {
   final String id;
@@ -71,7 +72,6 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
     final id = (u['usuarioId'] ?? u['id'])?.toString();
     final names = (u['nombres'] ?? u['firstName'] ?? '').toString().trim();
     final lastnames = (u['apellidos'] ?? u['lastName'] ?? '').toString().trim();
-    final localAvatarPath = await storage.getLocalAvatarPath();
     final savedUsername = await storage.getUsername();
 
     String displayName = names;
@@ -86,13 +86,22 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
       return null;
     }
 
+    final rawAvatar = u['imagenPerfilUrl'] ??
+        u['ImagenPerfilUrl'] ??
+        u['fotoUrl'] ??
+        u['FotoUrl'] ??
+        u['avatar'] ??
+        u['Avatar'];
+
     return UserProfile(
       id: id,
       email: (u['correo'] ?? u['email'] ?? '').toString(),
       phone: (u['telefono'] ?? u['phone'])?.toString(),
       firstName: displayName.isNotEmpty ? displayName : 'Usuario',
       lastName: lastnames,
-      avatar: localAvatarPath ?? u['imagenPerfilUrl'] ?? u['fotoUrl'] ?? u['avatar'],
+      avatar: rawAvatar != null && rawAvatar.toString().trim().isNotEmpty
+          ? JobEntity.formatUrl(rawAvatar.toString())
+          : null,
       dni: (u['documentoIdentidad'] ?? u['dni'])?.toString(),
       role: (u['role'] ?? 'USER').toString(),
       userType: (u['tipoUsuario'] ?? u['userType'] ?? 'BOTH')

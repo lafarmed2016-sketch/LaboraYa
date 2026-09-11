@@ -295,7 +295,14 @@ class JobEntity {
                     .trim())
             .toString();
     final pubName = formatPrivacyName(rawPubName);
-    final rawAvatar = json['empleadorAvatar'] ?? json['EmployerAvatar'] ?? publisher?['avatar'] ?? publisher?['Avatar'] ?? json['avatarUrl'] ?? json['AvatarUrl'];
+    final rawAvatar = json['empleadorFoto'] ??
+        json['EmpleadorFoto'] ??
+        json['empleadorAvatar'] ??
+        json['EmployerAvatar'] ??
+        publisher?['avatar'] ??
+        publisher?['Avatar'] ??
+        json['avatarUrl'] ??
+        json['AvatarUrl'];
     final pubAvatar = rawAvatar != null && rawAvatar.toString().trim().isNotEmpty
         ? formatUrl(rawAvatar.toString())
         : null;

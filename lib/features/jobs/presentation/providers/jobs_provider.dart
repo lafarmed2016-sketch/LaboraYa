@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/core/network/api_client.dart';
-import 'package:laboraya_app/core/storage/secure_storage.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 // Jobs state
@@ -55,8 +54,6 @@ class JobsState {
 // Jobs Notifier
 class JobsNotifier extends StateNotifier<JobsState> {
   final ApiClient _apiClient;
-  final SecureStorage _storage = SecureStorage();
-  final Map<String, List<String>> _localJobImages = {};
 
   JobsNotifier(this._apiClient) : super(const JobsState());
 
@@ -125,23 +122,8 @@ class JobsNotifier extends StateNotifier<JobsState> {
             .map((j) => JobEntity.fromJson(Map<String, dynamic>.from(j as Map)))
             .toList();
 
-        // Merge local photos logic by matching title or persistent storage
-        final storage = _storage;
-        final mergedJobsList = await Future.wait(jobsList.map((job) async {
-          if (job.images.isEmpty) {
-            if (_localJobImages.containsKey(job.title)) {
-              return job.copyWith(images: _localJobImages[job.title]);
-            }
-            final storedPath = await storage.getJobLocalImage(job.title);
-            if (storedPath != null && storedPath.isNotEmpty) {
-              return job.copyWith(images: [storedPath]);
-            }
-          }
-          return job;
-        }));
-
         state = state.copyWith(
-          jobs: refresh ? mergedJobsList : [...state.jobs, ...mergedJobsList],
+          jobs: refresh ? jobsList : [...state.jobs, ...jobsList],
           isLoading: false,
           hasMore: false,
           currentPage: page + 1,
@@ -154,7 +136,7 @@ class JobsNotifier extends StateNotifier<JobsState> {
     }
   }
 
-  /// Crear trabajo desde el formulario — intenta API, fallback local
+  /// Crear trabajo desde el formulario — envía directamente a API backend SQL
   Future<bool> createJobFromForm({
     required String title,
     required String description,
@@ -220,12 +202,6 @@ class JobsNotifier extends StateNotifier<JobsState> {
       bool isSuccess = false;
       dynamic response;
 
-      // Cache localmente las fotos de este trabajo
-      if (photos.isNotEmpty) {
-        _localJobImages[title] = photos.map((f) => f.path).toList();
-        await _storage.saveJobLocalImage(title, photos.first.path);
-      }
-
       if (photos.isNotEmpty) {
         try {
           final formMap = <String, dynamic>{};
@@ -247,6 +223,8 @@ class JobsNotifier extends StateNotifier<JobsState> {
             'files': [multipartFile],
             'images': [multipartFile],
             'foto': multipartFile,
+            if (base64Img != null) 'ImagenUrl': base64Img,
+            if (base64Img != null) 'imageUrl': base64Img,
           });
 
           response = await _apiClient.post(ApiConstants.jobsCreate, data: formData);
@@ -281,16 +259,6 @@ class JobsNotifier extends StateNotifier<JobsState> {
 
       if (isSuccess) {
         await loadJobs(refresh: true);
-        if (photos.isNotEmpty) {
-          final photoPath = photos.first.path;
-          final updatedJobs = state.jobs.map((j) {
-            if (j.title.trim().toLowerCase() == title.trim().toLowerCase() && j.images.isEmpty) {
-              return j.copyWith(images: [photoPath]);
-            }
-            return j;
-          }).toList();
-          state = state.copyWith(jobs: updatedJobs);
-        }
         return true;
       }
       return false;
@@ -364,32 +332,17 @@ final jobDetailProvider = FutureProvider.family<JobEntity?, String>((
   final jobs = ref.read(jobsProvider).jobs;
   var localJob = jobs.where((j) => j.id == jobId).firstOrNull;
   if (localJob != null) {
-    if (localJob.images.isEmpty) {
-      final storage = ref.read(secureStorageProvider);
-      final stored = await storage.getJobLocalImage(localJob.title);
-      if (stored != null && stored.isNotEmpty) {
-        localJob = localJob.copyWith(images: [stored]);
-      }
-    }
     return localJob;
   }
 
   try {
     final apiClient = ref.read(apiClientProvider);
-    final storage = ref.read(secureStorageProvider);
     final response = await apiClient.get('${ApiConstants.jobs}/$jobId');
     final data = response.data;
     final u = data is Map ? (data['datos'] ?? data['data'] ?? data) : null;
     if (u != null && u is Map) {
       final jobData = u['job'] ?? u;
-      var entity = JobEntity.fromJson(Map<String, dynamic>.from(jobData as Map));
-      if (entity.images.isEmpty) {
-        final stored = await storage.getJobLocalImage(entity.title);
-        if (stored != null && stored.isNotEmpty) {
-          entity = entity.copyWith(images: [stored]);
-        }
-      }
-      return entity;
+      return JobEntity.fromJson(Map<String, dynamic>.from(jobData as Map));
     }
     return null;
   } catch (e) {
@@ -400,7 +353,6 @@ final jobDetailProvider = FutureProvider.family<JobEntity?, String>((
 // My Jobs Provider — consulta mis publicaciones en V2 (/api/v2/TrabajoV2/MisPublicaciones)
 final myJobsProvider = FutureProvider<List<JobEntity>>((ref) async {
   final apiClient = ref.read(apiClientProvider);
-  final storage = ref.read(secureStorageProvider);
   try {
     final response = await apiClient.get(ApiConstants.jobsMine);
     final data = response.data;
@@ -417,18 +369,7 @@ final myJobsProvider = FutureProvider<List<JobEntity>>((ref) async {
       }
     }
 
-    final jobs = await Future.wait(rawList.map((j) async {
-      var entity = JobEntity.fromJson(j as Map<String, dynamic>);
-      if (entity.images.isEmpty) {
-        final stored = await storage.getJobLocalImage(entity.title);
-        if (stored != null && stored.isNotEmpty) {
-          entity = entity.copyWith(images: [stored]);
-        }
-      }
-      return entity;
-    }));
-
-    return jobs;
+    return rawList.map((j) => JobEntity.fromJson(j as Map<String, dynamic>)).toList();
   } catch (_) {
     return [];
   }
