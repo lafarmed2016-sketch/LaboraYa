@@ -1,10 +1,14 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
+import 'package:laboraya_app/core/network/api_client.dart';
 import 'package:laboraya_app/core/services/auth_service.dart';
+import 'package:laboraya_app/core/services/image_picker_service.dart';
 import 'package:laboraya_app/core/storage/secure_storage.dart';
 import 'package:laboraya_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
@@ -20,6 +24,52 @@ class ProfilePage extends ConsumerStatefulWidget {
 }
 
 class _ProfilePageState extends ConsumerState<ProfilePage> {
+  Future<void> _changeAvatarDirectly() async {
+    final file = await ImagePickerService.pickSingleImage(context);
+    if (file == null) return;
+
+    final storage = ref.read(secureStorageProvider);
+    await storage.saveLocalAvatarPath(file.path);
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final bytes = await file.readAsBytes();
+      final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+
+      final dataMap = {
+        'ImagenPerfilUrl': base64Image,
+        'imagenPerfilUrl': base64Image,
+      };
+
+      try {
+        await apiClient.put(ApiConstants.userProfile, data: dataMap);
+      } catch (_) {
+        final multipartFile = await MultipartFile.fromFile(
+          file.path,
+          filename: 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        );
+        final formData = FormData.fromMap({
+          'file': multipartFile,
+          'foto': multipartFile,
+          'ImagenPerfilUrl': base64Image,
+        });
+        await apiClient.post(ApiConstants.userProfile, data: formData);
+      }
+    } catch (_) {}
+
+    ref.invalidate(profileProvider);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('¡Foto de perfil actualizada correctamente!'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _showLogoutDialog() {
     showModalBottomSheet(
       context: context,
@@ -197,39 +247,43 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             // ── Cabecera de Perfil: Avatar + Info ───────────────────
             Row(
               children: [
-                // Avatar con check azul
-                Stack(
-                  children: [
-                    Container(
-                      width: 76,
-                      height: 76,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFEFF6FF),
-                        border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
-                      ),
-                      child: ClipOval(
-                        child: _buildAvatar(profile, initial),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
+                // Avatar interactivo con cámara + check
+                GestureDetector(
+                  onTap: _changeAvatarDirectly,
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          color: const Color(0xFFEFF6FF),
+                          border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
                         ),
-                        child: const Icon(
-                          Icons.check_rounded,
-                          color: Colors.white,
-                          size: 16,
+                        child: ClipOval(
+                          child: _buildAvatar(profile, initial),
                         ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt_rounded,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 16),
 
@@ -462,33 +516,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _buildAvatar(UserProfile? profile, String initial) {
-    if (profile?.avatar != null) {
-      final av = profile!.avatar!;
-      final formattedAv = JobEntity.formatUrl(av);
-      if (av.startsWith('data:image')) {
-        return Image.memory(
-          base64Decode(av.split(',').last),
-          fit: BoxFit.cover,
-          width: 76,
-          height: 76,
-        );
-      } else if (formattedAv.startsWith('http')) {
-        return Image.network(
-          formattedAv,
-          fit: BoxFit.cover,
-          width: 76,
-          height: 76,
-        );
-      } else {
-        return Image.file(
-          File(av),
-          fit: BoxFit.cover,
-          width: 76,
-          height: 76,
-        );
-      }
-    }
-    return Center(
+    final fallback = Center(
       child: Text(
         initial,
         style: const TextStyle(
@@ -499,6 +527,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         ),
       ),
     );
+
+    if (profile?.avatar != null && profile!.avatar!.isNotEmpty) {
+      return JobEntity.buildImageWidget(
+        profile.avatar!,
+        fit: BoxFit.cover,
+        fallbackBuilder: () => fallback,
+      );
+    }
+    return fallback;
   }
 }
 

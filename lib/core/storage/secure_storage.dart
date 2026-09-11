@@ -69,6 +69,19 @@ class SecureStorage {
     return await _storage.read(key: 'local_avatar_path');
   }
 
+  Future<void> saveJobLocalImage(String title, String path) async {
+    final cleanKey = title.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+    await _storage.write(key: 'job_img_$cleanKey', value: path);
+    await _storage.write(key: 'job_latest_img', value: path);
+  }
+
+  Future<String?> getJobLocalImage(String title) async {
+    final cleanKey = title.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+    final val = await _storage.read(key: 'job_img_$cleanKey');
+    if (val != null && val.isNotEmpty) return val;
+    return await _storage.read(key: 'job_latest_img');
+  }
+
   // Clear
   Future<void> clearTokens() async {
     await _storage.delete(key: _accessTokenKey);

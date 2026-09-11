@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/core/network/api_client.dart';
+import 'package:laboraya_app/core/storage/secure_storage.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 // Jobs state
@@ -54,6 +55,7 @@ class JobsState {
 // Jobs Notifier
 class JobsNotifier extends StateNotifier<JobsState> {
   final ApiClient _apiClient;
+  final SecureStorage _storage = SecureStorage();
   final Map<String, List<String>> _localJobImages = {};
 
   JobsNotifier(this._apiClient) : super(const JobsState());
@@ -123,13 +125,20 @@ class JobsNotifier extends StateNotifier<JobsState> {
             .map((j) => JobEntity.fromJson(Map<String, dynamic>.from(j as Map)))
             .toList();
 
-        // Merge local photos logic by matching title
-        final mergedJobsList = jobsList.map((job) {
-          if (_localJobImages.containsKey(job.title) && job.images.isEmpty) {
-            return job.copyWith(images: _localJobImages[job.title]);
+        // Merge local photos logic by matching title or persistent storage
+        final storage = _storage;
+        final mergedJobsList = await Future.wait(jobsList.map((job) async {
+          if (job.images.isEmpty) {
+            if (_localJobImages.containsKey(job.title)) {
+              return job.copyWith(images: _localJobImages[job.title]);
+            }
+            final storedPath = await storage.getJobLocalImage(job.title);
+            if (storedPath != null && storedPath.isNotEmpty) {
+              return job.copyWith(images: [storedPath]);
+            }
           }
           return job;
-        }).toList();
+        }));
 
         state = state.copyWith(
           jobs: refresh ? mergedJobsList : [...state.jobs, ...mergedJobsList],
@@ -214,13 +223,14 @@ class JobsNotifier extends StateNotifier<JobsState> {
       // Cache localmente las fotos de este trabajo
       if (photos.isNotEmpty) {
         _localJobImages[title] = photos.map((f) => f.path).toList();
+        await _storage.saveJobLocalImage(title, photos.first.path);
       }
 
       if (photos.isNotEmpty) {
         try {
           final formMap = <String, dynamic>{};
           dataMap.forEach((key, val) {
-            if (val != null) {
+            if (val != null && !key.toLowerCase().contains('imagenurl') && !key.toLowerCase().contains('imageurl')) {
               formMap[key] = val.toString();
             }
           });
@@ -245,7 +255,7 @@ class JobsNotifier extends StateNotifier<JobsState> {
             if (data['codigoRespuesta'] == '0' || data['success'] == true) {
               isSuccess = true;
             } else {
-              throw Exception(data['mensaje'] ?? 'Error desconocido');
+              state = state.copyWith(error: data['mensaje'] ?? 'Error desconocido');
             }
           }
         } catch (e) {
@@ -271,6 +281,16 @@ class JobsNotifier extends StateNotifier<JobsState> {
 
       if (isSuccess) {
         await loadJobs(refresh: true);
+        if (photos.isNotEmpty) {
+          final photoPath = photos.first.path;
+          final updatedJobs = state.jobs.map((j) {
+            if (j.title.trim().toLowerCase() == title.trim().toLowerCase() && j.images.isEmpty) {
+              return j.copyWith(images: [photoPath]);
+            }
+            return j;
+          }).toList();
+          state = state.copyWith(jobs: updatedJobs);
+        }
         return true;
       }
       return false;
@@ -280,12 +300,10 @@ class JobsNotifier extends StateNotifier<JobsState> {
     }
   }
 
-  /// Agregar un trabajo publicado por el usuario
-  void addJob(JobEntity job) {
+  void addLocalJob(JobEntity job) {
     state = state.copyWith(jobs: [job, ...state.jobs]);
   }
 
-  /// Eliminar un trabajo
   void removeJob(String jobId) {
     state = state.copyWith(
       jobs: state.jobs.where((j) => j.id != jobId).toList(),
@@ -312,18 +330,23 @@ class JobsNotifier extends StateNotifier<JobsState> {
     loadJobs(refresh: true);
   }
 
-  /// Datos demo para presentación cuando el API no está disponible
   void _loadDemoJobs() {
-    // No limpiar trabajos locales si los hay — mantener los publicados localmente
     state = state.copyWith(
       isLoading: false,
       hasMore: false,
       error: null,
-      // Conservar jobs existentes si los hay
       jobs: state.jobs.isNotEmpty ? state.jobs : [],
     );
   }
 }
+
+// Client Provider
+final jobsClientProvider = Provider<JobsNotifier>((ref) {
+  final apiClient = ref.read(apiClientProvider);
+  final notifier = JobsNotifier(apiClient);
+  notifier.loadJobs(refresh: true);
+  return notifier;
+});
 
 // Provider
 final jobsProvider = StateNotifierProvider<JobsNotifier, JobsState>((ref) {
@@ -333,24 +356,40 @@ final jobsProvider = StateNotifierProvider<JobsNotifier, JobsState>((ref) {
   return notifier;
 });
 
-// Single job provider - busca en lista local primero, luego en API
+// Single job provider
 final jobDetailProvider = FutureProvider.family<JobEntity?, String>((
   ref,
   jobId,
 ) async {
-  // Siempre buscar en la lista local primero (incluye demos)
   final jobs = ref.read(jobsProvider).jobs;
-  final localJob = jobs.where((j) => j.id == jobId).firstOrNull;
-  if (localJob != null) return localJob;
+  var localJob = jobs.where((j) => j.id == jobId).firstOrNull;
+  if (localJob != null) {
+    if (localJob.images.isEmpty) {
+      final storage = ref.read(secureStorageProvider);
+      final stored = await storage.getJobLocalImage(localJob.title);
+      if (stored != null && stored.isNotEmpty) {
+        localJob = localJob.copyWith(images: [stored]);
+      }
+    }
+    return localJob;
+  }
 
-  // Si no está local, intentar la API
   try {
     final apiClient = ref.read(apiClientProvider);
+    final storage = ref.read(secureStorageProvider);
     final response = await apiClient.get('${ApiConstants.jobs}/$jobId');
     final data = response.data;
-    if (data['success'] == true) {
-      final jobData = data['data']['job'] as Map<String, dynamic>;
-      return JobEntity.fromJson(jobData);
+    final u = data is Map ? (data['datos'] ?? data['data'] ?? data) : null;
+    if (u != null && u is Map) {
+      final jobData = u['job'] ?? u;
+      var entity = JobEntity.fromJson(Map<String, dynamic>.from(jobData as Map));
+      if (entity.images.isEmpty) {
+        final stored = await storage.getJobLocalImage(entity.title);
+        if (stored != null && stored.isNotEmpty) {
+          entity = entity.copyWith(images: [stored]);
+        }
+      }
+      return entity;
     }
     return null;
   } catch (e) {
@@ -361,6 +400,7 @@ final jobDetailProvider = FutureProvider.family<JobEntity?, String>((
 // My Jobs Provider — consulta mis publicaciones en V2 (/api/v2/TrabajoV2/MisPublicaciones)
 final myJobsProvider = FutureProvider<List<JobEntity>>((ref) async {
   final apiClient = ref.read(apiClientProvider);
+  final storage = ref.read(secureStorageProvider);
   try {
     final response = await apiClient.get(ApiConstants.jobsMine);
     final data = response.data;
@@ -377,7 +417,18 @@ final myJobsProvider = FutureProvider<List<JobEntity>>((ref) async {
       }
     }
 
-    return rawList.map((j) => JobEntity.fromJson(j as Map<String, dynamic>)).toList();
+    final jobs = await Future.wait(rawList.map((j) async {
+      var entity = JobEntity.fromJson(j as Map<String, dynamic>);
+      if (entity.images.isEmpty) {
+        final stored = await storage.getJobLocalImage(entity.title);
+        if (stored != null && stored.isNotEmpty) {
+          entity = entity.copyWith(images: [stored]);
+        }
+      }
+      return entity;
+    }));
+
+    return jobs;
   } catch (_) {
     return [];
   }
