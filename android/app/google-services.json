@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "320726381262-pmcrua1fq0klb4chd5o4o7lcnnakq8sn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.laboraya.app",
+            "certificate_hash": "b6c0e69f813e61c4c36cc48ec0ae8e9f5a96fcd7"
+          }
+        },
+        {
           "client_id": "320726381262-uvcrtmeepa348g76vrer0l5g9p8uniql.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
