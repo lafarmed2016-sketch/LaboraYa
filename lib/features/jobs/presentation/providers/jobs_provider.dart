@@ -251,8 +251,6 @@ class JobsNotifier extends StateNotifier<JobsState> {
           final formData = FormData.fromMap({
             ...formMap,
             'files': multipartFiles,
-            'file': multipartFiles.first,
-            'foto': multipartFiles.first,
             if (base64Img != null) 'ImagenUrl': base64Img,
             if (base64Img != null) 'imageUrl': base64Img,
           });

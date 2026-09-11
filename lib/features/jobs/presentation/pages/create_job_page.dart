@@ -29,58 +29,56 @@ class PeruCategoryItem {
 // ─── Directorio Completo de Categorías y Trabajos en Perú ────────────────────
 const List<PeruCategoryItem> _allPeruCategories = [
   // Popular en Perú
-  PeruCategoryItem(name: 'Gasfitería / Plomería', icon: Icons.water_drop_rounded, group: 'Hogar', isPopular: true, keywords: ['tubería', 'fuga', 'agua', 'grifo', 'inodoro', 'desagüe', 'gasfitero', 'plomería']),
-  PeruCategoryItem(name: 'Electricidad Domiciliaria / Industrial', icon: Icons.flash_on_rounded, group: 'Hogar', isPopular: true, keywords: ['luz', 'cable', 'tablero', 'tomacorriente', 'corto', 'electricista']),
-  PeruCategoryItem(name: 'Pintura y Empastado', icon: Icons.format_paint_rounded, group: 'Hogar', isPopular: true, keywords: ['pared', 'fachada', 'látex', 'esmalte', 'empaste', 'pintor']),
-  PeruCategoryItem(name: 'Albañilería y Enchapado', icon: Icons.handyman_rounded, group: 'Hogar', isPopular: true, keywords: ['mayólica', 'porcelanato', 'muro', 'piso', 'tarrajeo', 'albañil', 'cemento']),
-  PeruCategoryItem(name: 'Carpintería y Melamina', icon: Icons.table_restaurant_rounded, group: 'Hogar', isPopular: true, keywords: ['mueble', 'ropero', 'repostero', 'mdf', 'puerta', 'carpintero']),
-  PeruCategoryItem(name: 'Limpieza de Casas / Departamentos', icon: Icons.cleaning_services_rounded, group: 'Limpieza', isPopular: true, keywords: ['casa', 'hogar', 'depa', 'limpieza', 'post construccion']),
-  PeruCategoryItem(name: 'Cerrajería de Seguridad', icon: Icons.lock_rounded, group: 'Técnicos', isPopular: true, keywords: ['chapa', 'llave', 'puerta', 'cerrajero', 'candado']),
-  PeruCategoryItem(name: 'Técnico de Laptops, PC y Redes', icon: Icons.computer_rounded, group: 'Técnicos', isPopular: true, keywords: ['computadora', 'formateo', 'wifi', 'laptop', 'tecnico']),
-  PeruCategoryItem(name: 'Mecánica Automotriz / Motos', icon: Icons.directions_car_rounded, group: 'Técnicos', isPopular: true, keywords: ['auto', 'carro', 'moto', 'aceite', 'frenos', 'mecanico']),
-  PeruCategoryItem(name: 'Mudanzas, Cargador y Estibador', icon: Icons.local_shipping_rounded, group: 'Logística', isPopular: true, keywords: ['flete', 'carga', 'mudanza', 'camioneta', 'cargador']),
-  PeruCategoryItem(name: 'Soldadura y Estructuras Metálicas', icon: Icons.precision_manufacturing_rounded, group: 'Construcción', isPopular: true, keywords: ['reja', 'porton', 'soldador', 'fierro', 'metal']),
-  PeruCategoryItem(name: 'Cuidado de Adultos Mayores y Enfermería', icon: Icons.health_and_safety_rounded, group: 'Asistencia', isPopular: true, keywords: ['abuelo', 'enfermera', 'inyección', 'cuidado']),
+  PeruCategoryItem(name: 'Gasfitería', icon: Icons.water_drop_rounded, group: 'Hogar', isPopular: true, keywords: ['tubería', 'fuga', 'agua', 'grifo', 'inodoro', 'desagüe', 'gasfitero', 'plomería']),
+  PeruCategoryItem(name: 'Electricidad', icon: Icons.flash_on_rounded, group: 'Hogar', isPopular: true, keywords: ['luz', 'cable', 'tablero', 'tomacorriente', 'corto', 'electricista']),
+  PeruCategoryItem(name: 'Pintura', icon: Icons.format_paint_rounded, group: 'Hogar', isPopular: true, keywords: ['pared', 'fachada', 'látex', 'esmalte', 'empaste', 'pintor']),
+  PeruCategoryItem(name: 'Albañilería', icon: Icons.handyman_rounded, group: 'Hogar', isPopular: true, keywords: ['mayólica', 'porcelanato', 'muro', 'piso', 'tarrajeo', 'albañil', 'cemento']),
+  PeruCategoryItem(name: 'Carpintería', icon: Icons.table_restaurant_rounded, group: 'Hogar', isPopular: true, keywords: ['mueble', 'ropero', 'repostero', 'mdf', 'puerta', 'carpintero']),
+  PeruCategoryItem(name: 'Limpieza', icon: Icons.cleaning_services_rounded, group: 'Limpieza', isPopular: true, keywords: ['casa', 'hogar', 'depa', 'limpieza', 'post construccion']),
+  PeruCategoryItem(name: 'Cerrajería', icon: Icons.lock_rounded, group: 'Técnicos', isPopular: true, keywords: ['chapa', 'llave', 'puerta', 'cerrajero', 'candado']),
+  PeruCategoryItem(name: 'Sistemas y PC', icon: Icons.computer_rounded, group: 'Técnicos', isPopular: true, keywords: ['computadora', 'formateo', 'wifi', 'laptop', 'tecnico', 'programacion', 'sistemas', 'software']),
+  PeruCategoryItem(name: 'Mecánica', icon: Icons.directions_car_rounded, group: 'Técnicos', isPopular: true, keywords: ['auto', 'carro', 'moto', 'aceite', 'frenos', 'mecanico']),
+  PeruCategoryItem(name: 'Mudanzas', icon: Icons.local_shipping_rounded, group: 'Logística', isPopular: true, keywords: ['flete', 'carga', 'mudanza', 'camioneta', 'cargador']),
+  PeruCategoryItem(name: 'Soldadura', icon: Icons.precision_manufacturing_rounded, group: 'Construcción', isPopular: true, keywords: ['reja', 'porton', 'soldador', 'fierro', 'metal']),
+  PeruCategoryItem(name: 'Enfermería', icon: Icons.health_and_safety_rounded, group: 'Asistencia', isPopular: true, keywords: ['abuelo', 'enfermera', 'inyección', 'cuidado']),
 
   // Técnicos & Mantenimiento
-  PeruCategoryItem(name: 'Técnico de Electrodomésticos', icon: Icons.kitchen_rounded, group: 'Técnicos', keywords: ['lavadora', 'refrigeradora', 'cocina', 'microondas']),
-  PeruCategoryItem(name: 'Instalación de Aire Acondicionado', icon: Icons.ac_unit_rounded, group: 'Técnicos', keywords: ['aire', 'clima', 'split', 'mantenimiento']),
-  PeruCategoryItem(name: 'Cámaras de Seguridad y Alarmas', icon: Icons.videocam_rounded, group: 'Técnicos', keywords: ['cctv', 'alarma', 'camara', 'cerco']),
-  PeruCategoryItem(name: 'Reparación de Celulares y Tablets', icon: Icons.smartphone_rounded, group: 'Técnicos', keywords: ['pantalla', 'bateria', 'pin', 'celular']),
-  PeruCategoryItem(name: 'Drywall y Cielos Rasos', icon: Icons.grid_view_rounded, group: 'Construcción', keywords: ['tabiquería', 'techo falso', 'placa']),
-  PeruCategoryItem(name: 'Techos, Coberturas y Filtraciones', icon: Icons.roofing_rounded, group: 'Construcción', keywords: ['gotera', 'calamina', 'policarbonato', 'impermeabilizado']),
-  PeruCategoryItem(name: 'Fumigación y Control de Plagas', icon: Icons.bug_report_rounded, group: 'Limpieza', keywords: ['desinfeccion', 'insectos', 'chinche', 'cucaracha']),
+  PeruCategoryItem(name: 'Electrodomésticos', icon: Icons.kitchen_rounded, group: 'Técnicos', keywords: ['lavadora', 'refrigeradora', 'cocina', 'microondas']),
+  PeruCategoryItem(name: 'Aire Acondicionado', icon: Icons.ac_unit_rounded, group: 'Técnicos', keywords: ['aire', 'clima', 'split', 'mantenimiento']),
+  PeruCategoryItem(name: 'Cámaras y Alarmas', icon: Icons.videocam_rounded, group: 'Técnicos', keywords: ['cctv', 'alarma', 'camara', 'cerco']),
+  PeruCategoryItem(name: 'Reparación Celulares', icon: Icons.smartphone_rounded, group: 'Técnicos', keywords: ['pantalla', 'bateria', 'pin', 'celular']),
+  PeruCategoryItem(name: 'Drywall', icon: Icons.grid_view_rounded, group: 'Construcción', keywords: ['tabiquería', 'techo falso', 'placa']),
+  PeruCategoryItem(name: 'Techos y Goteras', icon: Icons.roofing_rounded, group: 'Construcción', keywords: ['gotera', 'calamina', 'policarbonato', 'impermeabilizado']),
+  PeruCategoryItem(name: 'Fumigación', icon: Icons.bug_report_rounded, group: 'Limpieza', keywords: ['desinfeccion', 'insectos', 'chinche', 'cucaracha']),
 
   // Asistencia & Limpieza
-  PeruCategoryItem(name: 'Limpieza de Oficinas y Locales', icon: Icons.business_rounded, group: 'Limpieza', keywords: ['oficina', 'local', 'empresa']),
-  PeruCategoryItem(name: 'Asistente de Hogar / Lavado', icon: Icons.local_laundry_service_rounded, group: 'Limpieza', keywords: ['planchado', 'ropa', 'doméstica']),
-  PeruCategoryItem(name: 'Niñera / Cuidado de Niños', icon: Icons.child_care_rounded, group: 'Asistencia', keywords: ['babysitter', 'bebe', 'hijos']),
-  PeruCategoryItem(name: 'Lavado de Tapiz y Alfombras', icon: Icons.chair_rounded, group: 'Limpieza', keywords: ['sillón', 'colchón', 'auto']),
-  PeruCategoryItem(name: 'Jardinería y Paisajismo', icon: Icons.grass_rounded, group: 'Hogar', keywords: ['césped', 'poda', 'jardín', 'plantas']),
+  PeruCategoryItem(name: 'Asistencia Hogar', icon: Icons.local_laundry_service_rounded, group: 'Limpieza', keywords: ['planchado', 'ropa', 'doméstica']),
+  PeruCategoryItem(name: 'Niñera', icon: Icons.child_care_rounded, group: 'Asistencia', keywords: ['babysitter', 'bebe', 'hijos']),
+  PeruCategoryItem(name: 'Jardinería', icon: Icons.grass_rounded, group: 'Hogar', keywords: ['césped', 'poda', 'jardín', 'plantas']),
 
   // Construcción & Metalurgia
-  PeruCategoryItem(name: 'Vidriería y Ventanas de Aluminio', icon: Icons.window_rounded, group: 'Construcción', keywords: ['vidrio', 'templado', 'mampara', 'espejo']),
-  PeruCategoryItem(name: 'Tornero y Fresador Mecánico', icon: Icons.settings_suggest_rounded, group: 'Construcción', keywords: ['torno', 'metal', 'pieza']),
-  PeruCategoryItem(name: 'Operador de Maquinaria Pesada', icon: Icons.agriculture_rounded, group: 'Construcción', keywords: ['excavadora', 'montacargas', 'retro']),
+  PeruCategoryItem(name: 'Vidriería', icon: Icons.window_rounded, group: 'Construcción', keywords: ['vidrio', 'templado', 'mampara', 'espejo']),
+  PeruCategoryItem(name: 'Mecanizado', icon: Icons.settings_suggest_rounded, group: 'Construcción', keywords: ['torno', 'metal', 'pieza']),
+  PeruCategoryItem(name: 'Maquinaria', icon: Icons.agriculture_rounded, group: 'Construcción', keywords: ['excavadora', 'montacargas', 'retro']),
 
   // Logística & Transporte
-  PeruCategoryItem(name: 'Chófer / Conductor Privado o Carga', icon: Icons.directions_bus_rounded, group: 'Logística', keywords: ['conductor', 'chofer', 'viaje', 'licencia']),
-  PeruCategoryItem(name: 'Repartidor / Delivery Motorizado', icon: Icons.two_wheeler_rounded, group: 'Logística', keywords: ['moto', 'delivery', 'paquete', 'courier']),
+  PeruCategoryItem(name: 'Conductor', icon: Icons.directions_bus_rounded, group: 'Logística', keywords: ['conductor', 'chofer', 'viaje', 'licencia']),
+  PeruCategoryItem(name: 'Delivery', icon: Icons.two_wheeler_rounded, group: 'Logística', keywords: ['moto', 'delivery', 'paquete', 'courier']),
 
   // Gastronomía & Eventos
-  PeruCategoryItem(name: 'Cocinero / Ayudante de Cocina / Chef', icon: Icons.restaurant_rounded, group: 'Gastronomía', isPopular: true, keywords: ['comida', 'buffet', 'parrilla', 'menu']),
-  PeruCategoryItem(name: 'Mozo / Mesero para Eventos', icon: Icons.room_service_rounded, group: 'Gastronomía', keywords: ['mozo', 'banquete', 'matrimonio']),
-  PeruCategoryItem(name: 'Panadería y Pastelería', icon: Icons.cake_rounded, group: 'Gastronomía', keywords: ['torta', 'bocadito', 'postre']),
-  PeruCategoryItem(name: 'DJ, Sonido e Iluminación', icon: Icons.headset_mic_rounded, group: 'Eventos', keywords: ['fiesta', 'parlante', 'evento']),
-  PeruCategoryItem(name: 'Fotografía y Video Profesional', icon: Icons.camera_alt_rounded, group: 'Eventos', keywords: ['bodas', 'foto', 'camara', 'sesion']),
+  PeruCategoryItem(name: 'Gastronomía', icon: Icons.restaurant_rounded, group: 'Gastronomía', isPopular: true, keywords: ['comida', 'buffet', 'parrilla', 'menu', 'cocina', 'chef']),
+  PeruCategoryItem(name: 'Mozos y Eventos', icon: Icons.room_service_rounded, group: 'Gastronomía', keywords: ['mozo', 'banquete', 'matrimonio']),
+  PeruCategoryItem(name: 'Panadería', icon: Icons.cake_rounded, group: 'Gastronomía', keywords: ['torta', 'bocadito', 'postre']),
+  PeruCategoryItem(name: 'DJ y Sonido', icon: Icons.headset_mic_rounded, group: 'Eventos', keywords: ['fiesta', 'parlante', 'evento']),
+  PeruCategoryItem(name: 'Fotografía', icon: Icons.camera_alt_rounded, group: 'Eventos', keywords: ['bodas', 'foto', 'camara', 'sesion']),
 
   // Servicios Varios
-  PeruCategoryItem(name: 'Peluquería, Barbería y Estética', icon: Icons.content_cut_rounded, group: 'Estética', isPopular: true, keywords: ['corte', 'tinte', 'manicure', 'barbero']),
-  PeruCategoryItem(name: 'Costura, Confección y Sastrería', icon: Icons.checkroom_rounded, group: 'Servicios', keywords: ['ropa', 'basta', 'vestido', 'sastre']),
-  PeruCategoryItem(name: 'Diseñador Gráfico y Publicidad', icon: Icons.palette_rounded, group: 'Servicios', keywords: ['logo', 'banner', 'diseno']),
-  PeruCategoryItem(name: 'Asesoría Contable y SUNAT', icon: Icons.receipt_long_rounded, group: 'Servicios', keywords: ['contabilidad', 'impuestos', 'boleta']),
-  PeruCategoryItem(name: 'Clases Particulares / Tutoría', icon: Icons.school_rounded, group: 'Servicios', keywords: ['profesor', 'matematica', 'ingles', 'clases']),
-  PeruCategoryItem(name: 'Paseador y Cuidado de Mascotas', icon: Icons.pets_rounded, group: 'Servicios', keywords: ['perro', 'veterinaria', 'gato']),
+  PeruCategoryItem(name: 'Cosmetología y Barbería', icon: Icons.content_cut_rounded, group: 'Estética', isPopular: true, keywords: ['corte', 'tinte', 'manicure', 'barbero', 'barberia', 'peluqueria', 'estetica', 'cosmetologia']),
+  PeruCategoryItem(name: 'Costura', icon: Icons.checkroom_rounded, group: 'Servicios', keywords: ['ropa', 'basta', 'vestido', 'sastre']),
+  PeruCategoryItem(name: 'Diseño Gráfico', icon: Icons.palette_rounded, group: 'Servicios', keywords: ['logo', 'banner', 'diseno']),
+  PeruCategoryItem(name: 'Contabilidad', icon: Icons.receipt_long_rounded, group: 'Servicios', keywords: ['contabilidad', 'impuestos', 'boleta', 'sunat']),
+  PeruCategoryItem(name: 'Tutoría y Clases', icon: Icons.school_rounded, group: 'Servicios', keywords: ['profesor', 'matematica', 'ingles', 'clases']),
+  PeruCategoryItem(name: 'Mascotas', icon: Icons.pets_rounded, group: 'Servicios', keywords: ['perro', 'veterinaria', 'gato']),
 ];
 
 // ─── CreateJobPage ─────────────────────────────────────────────────────────────
@@ -662,7 +660,7 @@ class _Select2CategoryModalState extends State<_Select2CategoryModal> {
     final popularList = _allPeruCategories.where((c) => c.isPopular).toList();
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
+      height: MediaQuery.of(context).size.height * 0.75,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -931,25 +929,37 @@ class _CategoryListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
+      margin: const EdgeInsets.only(bottom: 4),
       child: ListTile(
         onTap: onTap,
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            width: 1,
+          ),
         ),
         tileColor: isSelected ? AppColors.primaryLight : const Color(0xFFF8FAFC),
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primary : Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border,
-            ),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              if (!isSelected)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+            ],
           ),
           child: Icon(
             item.icon,
-            size: 18,
+            size: 16,
             color: isSelected ? Colors.white : AppColors.primary,
           ),
         ),
@@ -957,25 +967,25 @@ class _CategoryListTile extends StatelessWidget {
           item.name,
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 13,
+            fontSize: 12.5,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected ? AppColors.primary : AppColors.textPrimary,
           ),
         ),
         trailing: isSelected
-            ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20)
+            ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 18)
             : Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Text(
                   item.group,
                   style: const TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 10,
+                    fontSize: 9.5,
                     color: AppColors.textSecondary,
                   ),
                 ),
