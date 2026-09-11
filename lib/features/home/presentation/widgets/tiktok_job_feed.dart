@@ -6,6 +6,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 import 'package:laboraya_app/features/favorites/presentation/providers/favorites_provider.dart';
+import 'package:laboraya_app/features/home/presentation/widgets/job_card.dart';
 
 class TikTokJobFeed extends StatefulWidget {
   final List<dynamic> jobs;
@@ -284,6 +285,8 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
           if (hasImages)
             PageView.builder(
               controller: _imagePageController,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
               itemCount: widget.job.images.length,
               onPageChanged: (idx) {
                 setState(() => _currentImageIndex = idx);
@@ -411,13 +414,21 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
                 ),
                 const SizedBox(height: 18),
 
-                // Contactar / Chat
+                // Comentarios Públicos
                 _TikTokActionButton(
                   icon: Icons.chat_bubble_rounded,
                   iconColor: Colors.white,
-                  label: 'Chat',
+                  label: 'Comentar',
                   onTap: () {
-                    context.push('/messages');
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (ctx) => JobCommentsBottomSheet(
+                        job: widget.job,
+                        onCommentAdded: () {},
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(height: 18),

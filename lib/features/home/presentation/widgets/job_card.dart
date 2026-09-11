@@ -603,7 +603,7 @@ class _SocialBarState extends State<_SocialBar> with SingleTickerProviderStateMi
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _JobCommentsBottomSheet(
+      builder: (ctx) => JobCommentsBottomSheet(
         job: widget.job,
         onCommentAdded: () {
           setState(() {
@@ -810,20 +810,21 @@ class _SocialBarState extends State<_SocialBar> with SingleTickerProviderStateMi
 
 // ─── Modal de Comentarios ─────────────────────────────────────────────────────
 
-class _JobCommentsBottomSheet extends StatefulWidget {
+class JobCommentsBottomSheet extends StatefulWidget {
   final JobEntity job;
   final VoidCallback onCommentAdded;
 
-  const _JobCommentsBottomSheet({
+  const JobCommentsBottomSheet({
+    super.key,
     required this.job,
     required this.onCommentAdded,
   });
 
   @override
-  State<_JobCommentsBottomSheet> createState() => _JobCommentsBottomSheetState();
+  State<JobCommentsBottomSheet> createState() => _JobCommentsBottomSheetState();
 }
 
-class _JobCommentsBottomSheetState extends State<_JobCommentsBottomSheet> {
+class _JobCommentsBottomSheetState extends State<JobCommentsBottomSheet> {
   final TextEditingController _commentCtrl = TextEditingController();
   final List<Map<String, String>> _comments = [
     {

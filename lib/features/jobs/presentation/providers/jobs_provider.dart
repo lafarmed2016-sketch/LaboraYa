@@ -136,6 +136,38 @@ class JobsNotifier extends StateNotifier<JobsState> {
     }
   }
 
+  int _resolveCategoryId(String name) {
+    final clean = name.trim().toLowerCase();
+    if (clean.contains('barber') || clean.contains('peluquer') || clean.contains('estética') || clean.contains('estetica')) return 11;
+    if (clean.contains('vidrier') || clean.contains('aluminio')) return 12;
+    if (clean.contains('tornero') || clean.contains('fresador')) return 13;
+    if (clean.contains('maquinaria')) return 14;
+    if (clean.contains('chófer') || clean.contains('chofer') || clean.contains('conductor')) return 15;
+    if (clean.contains('repartidor') || clean.contains('delivery')) return 16;
+    if (clean.contains('cocinero') || clean.contains('chef') || clean.contains('cocina')) return 17;
+    if (clean.contains('mozo') || clean.contains('mesero')) return 18;
+    if (clean.contains('panader') || clean.contains('pasteler')) return 19;
+    if (clean.contains('dj') || clean.contains('sonido') || clean.contains('iluminaci')) return 20;
+    if (clean.contains('fotograf') || clean.contains('video')) return 21;
+    if (clean.contains('costura') || clean.contains('confecci') || clean.contains('sastre')) return 22;
+    if (clean.contains('diseñad') || clean.contains('disenad') || clean.contains('gráfico') || clean.contains('grafico')) return 23;
+    if (clean.contains('contable') || clean.contains('sunat') || clean.contains('asesor')) return 24;
+    if (clean.contains('clases') || clean.contains('tutor') || clean.contains('profesor')) return 25;
+    if (clean.contains('paseador') || clean.contains('mascota')) return 26;
+
+    if (clean.contains('plomer') || clean.contains('gasfiter')) return 1;
+    if (clean.contains('electric')) return 2;
+    if (clean.contains('pintur')) return 3;
+    if (clean.contains('albañil') || clean.contains('albanil')) return 4;
+    if (clean.contains('carpinter')) return 5;
+    if (clean.contains('limpiez')) return 6;
+    if (clean.contains('mecánic') || clean.contains('mecanic')) return 7;
+    if (clean.contains('cerraj') || clean.contains('soldad')) return 8;
+    if (clean.contains('técnic') || clean.contains('tecnic') || clean.contains('pc')) return 9;
+
+    return 1;
+  }
+
   /// Crear trabajo desde el formulario — envía directamente a API backend SQL
   Future<bool> createJobFromForm({
     required String title,
@@ -153,12 +185,7 @@ class JobsNotifier extends StateNotifier<JobsState> {
     int workersNeeded = 1,
     List<File> photos = const [],
   }) async {
-    final cats = [
-      'Plomería', 'Electricidad', 'Pintura', 'Albañilería', 'Carpintería', 
-      'Limpieza', 'Mecánica', 'Cerrajería', 'Técnico PC'
-    ];
-    final catId = cats.indexOf(categoryName) + 1;
-    final finalCatId = catId > 0 ? catId : 1;
+    final finalCatId = _resolveCategoryId(categoryName);
 
     try {
       String? base64Img;

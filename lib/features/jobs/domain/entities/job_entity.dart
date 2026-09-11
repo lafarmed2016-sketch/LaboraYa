@@ -341,6 +341,7 @@ class JobEntity {
         json['PhotoUrl'];
 
     List<String> imgs = [];
+    final rawFotosStr = json['fotos'] ?? json['Fotos'];
     if (imagesList != null && imagesList.isNotEmpty) {
       imgs = imagesList.map((e) {
         if (e is Map) {
@@ -349,6 +350,9 @@ class JobEntity {
         }
         return formatUrl(e.toString());
       }).where((s) => s.isNotEmpty).toList();
+    } else if (rawFotosStr is String && rawFotosStr.trim().isNotEmpty) {
+      final parts = rawFotosStr.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      imgs = parts.map((s) => formatUrl(s)).toList();
     } else if (rawSingleImage != null && rawSingleImage.toString().trim().isNotEmpty) {
       imgs = [formatUrl(rawSingleImage.toString())];
     }
