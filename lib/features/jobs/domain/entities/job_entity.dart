@@ -159,25 +159,15 @@ class JobEntity {
 
   bool isMine({String? myId, String? myName}) {
     if (publisherId == 'user_current') return true;
-    if (myId != null && myId.isNotEmpty && publisherId.toString().trim() == myId.toString().trim()) {
-      return true;
+    if (myId != null && myId.isNotEmpty && myId != '0') {
+      return publisherId.toString().trim() == myId.toString().trim();
     }
     if (myName != null && myName.trim().isNotEmpty) {
       final cleanMy = myName.trim().toLowerCase();
       final cleanPub = publisherName.trim().toLowerCase();
+      if (cleanPub == 'empleador' || cleanMy == 'empleador') return false;
       if (cleanPub == cleanMy || cleanPub == 'tú' || cleanPub == 'tu') {
         return true;
-      }
-      final myParts = cleanMy.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-      final pubParts = cleanPub.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-      if (myParts.isNotEmpty && pubParts.isNotEmpty && myParts[0] == pubParts[0]) {
-        return true;
-      }
-      if (myParts.length >= 2) {
-        final expectedShort = '${myParts[0]} ${myParts[1][0]}.';
-        if (cleanPub == expectedShort.toLowerCase()) {
-          return true;
-        }
       }
     }
     return false;

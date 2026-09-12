@@ -286,7 +286,9 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
             PageView.builder(
               controller: _imagePageController,
               scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
               itemCount: widget.job.images.length,
               onPageChanged: (idx) {
                 setState(() => _currentImageIndex = idx);
@@ -299,40 +301,129 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
             _buildCategoryBanner(catColor),
 
           // ── 2. Sombra Gradiente para Legibilidad ─────────────────────
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.55),
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.35),
-                  Colors.black.withValues(alpha: 0.88),
-                ],
-                stops: const [0.0, 0.25, 0.65, 1.0],
+          const IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black54,
+                    Colors.transparent,
+                    Colors.black38,
+                    Colors.black87,
+                  ],
+                  stops: [0.0, 0.25, 0.65, 1.0],
+                ),
               ),
             ),
           ),
 
-          // ── 3. Indicador de imágenes (si hay más de 1) ──────────────
-          if (hasImages && widget.job.images.length > 1)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 70,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: AnimatedSmoothIndicator(
-                  activeIndex: _currentImageIndex,
-                  count: widget.job.images.length,
-                  effect: const ExpandingDotsEffect(
-                    dotWidth: 6,
-                    dotHeight: 6,
-                    activeDotColor: Colors.white,
-                    dotColor: Colors.white38,
-                    expansionFactor: 3,
+          // ── 2b. Botones de Navegación Lateral (Flechas Izquierda / Derecha) ──
+          if (hasImages && widget.job.images.length > 1) ...[
+            if (_currentImageIndex > 0)
+              Positioned(
+                left: 12,
+                top: MediaQuery.of(context).size.height * 0.38,
+                child: GestureDetector(
+                  onTap: () {
+                    _imagePageController.previousPage(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white38, width: 1.2),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black38, blurRadius: 4),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                   ),
                 ),
+              ),
+            if (_currentImageIndex < widget.job.images.length - 1)
+              Positioned(
+                right: 70,
+                top: MediaQuery.of(context).size.height * 0.38,
+                child: GestureDetector(
+                  onTap: () {
+                    _imagePageController.nextPage(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white38, width: 1.2),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black38, blurRadius: 4),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+
+          // ── 3. Indicador de imágenes y Contador ─────────────────────
+          if (hasImages && widget.job.images.length > 1)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 64,
+              left: 0,
+              right: 0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Text(
+                      '📷 ${_currentImageIndex + 1} / ${widget.job.images.length}',
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Center(
+                    child: AnimatedSmoothIndicator(
+                      activeIndex: _currentImageIndex,
+                      count: widget.job.images.length,
+                      effect: const ExpandingDotsEffect(
+                        dotWidth: 7,
+                        dotHeight: 7,
+                        activeDotColor: Colors.white,
+                        dotColor: Colors.white38,
+                        expansionFactor: 3,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
