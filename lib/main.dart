@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:laboraya_app/app/app.dart';
+import 'package:laboraya_app/core/services/push_notification_service.dart';
 import 'package:laboraya_app/firebase_options.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -21,6 +23,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   timeago.setLocaleMessages('es', timeago.EsMessages());
 
   runApp(const ProviderScope(child: LaboraYaApp()));
