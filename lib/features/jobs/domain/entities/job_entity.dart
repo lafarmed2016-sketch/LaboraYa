@@ -187,6 +187,12 @@ class JobEntity {
   static String formatUrl(String rawPath) {
     var trimmed = rawPath.trim().replaceAll('\\', '/');
     if (trimmed.isEmpty) return trimmed;
+    if (trimmed.contains('localhost') || trimmed.contains('127.0.0.1') || trimmed.contains('10.0.2.2')) {
+      final uri = Uri.tryParse(trimmed);
+      if (uri != null && uri.path.isNotEmpty) {
+        return '${EnvConfig.development.apiBaseUrl}${uri.path}';
+      }
+    }
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image')) {
       return trimmed;
     }
