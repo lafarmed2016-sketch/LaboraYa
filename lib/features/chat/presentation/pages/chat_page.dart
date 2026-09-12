@@ -30,18 +30,39 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final _msgCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   bool _hasText = false;
+  late String _activeConversationId;
 
   @override
   void initState() {
     super.initState();
+    _activeConversationId = widget.conversationId;
     _msgCtrl.addListener(
       () => setState(() => _hasText = _msgCtrl.text.trim().isNotEmpty),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!widget.conversationId.startsWith('new_')) {
-        ref.read(chatProvider.notifier).getMessages(widget.conversationId);
-      }
+      _initChat();
     });
+  }
+
+  Future<void> _initChat() async {
+    if (_activeConversationId.startsWith('new_')) {
+      final otherId = int.tryParse(
+        widget.participantId ?? _activeConversationId.replaceFirst('new_', ''),
+      );
+      if (otherId != null) {
+        final realId = await ref
+            .read(chatProvider.notifier)
+            .getOrCreateConversation(otherId);
+        if (mounted && realId != null && realId.isNotEmpty) {
+          setState(() {
+            _activeConversationId = realId;
+          });
+          await ref.read(chatProvider.notifier).getMessages(realId);
+        }
+      }
+    } else {
+      await ref.read(chatProvider.notifier).getMessages(_activeConversationId);
+    }
   }
 
   @override
@@ -51,15 +72,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     super.dispose();
   }
 
-  void _send() {
+  void _send() async {
     final text = _msgCtrl.text.trim();
     if (text.isEmpty) return;
-    ref.read(chatProvider.notifier).sendMessage(
-      widget.conversationId,
+    _msgCtrl.clear();
+    final realId = await ref.read(chatProvider.notifier).sendMessage(
+      _activeConversationId,
       text,
       participantId: widget.participantId,
     );
-    _msgCtrl.clear();
+    if (mounted && realId != null && realId.isNotEmpty && realId != _activeConversationId) {
+      setState(() {
+        _activeConversationId = realId;
+      });
+    }
     _scrollToBottom();
   }
 
@@ -75,9 +101,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final messages = ref.watch(chatProvider)[widget.conversationId] ?? [];
+    final messages = ref.watch(chatProvider)[_activeConversationId] ?? [];
     final conversations = ref.watch(conversationsProvider).value ?? [];
-    final convo = conversations.where((c) => c.conversationId == widget.conversationId).firstOrNull;
+    final convo = conversations
+        .where((c) => c.conversationId == _activeConversationId)
+        .firstOrNull;
 
     return Scaffold(
       backgroundColor: AppColors.background,

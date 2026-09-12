@@ -44,7 +44,8 @@ class ConversationData {
 
 class ChatNotifier extends StateNotifier<Map<String, List<ChatMessage>>> {
   final ApiClient _apiClient;
-  ChatNotifier(this._apiClient) : super({});
+  final Ref? _ref;
+  ChatNotifier(this._apiClient, [this._ref]) : super({});
 
   Future<List<ChatMessage>> getMessages(
     String conversationId, {
@@ -65,7 +66,7 @@ class ChatNotifier extends StateNotifier<Map<String, List<ChatMessage>>> {
         final messages = list.map((m) {
           final createdAt =
               DateTime.tryParse(
-                (m['createdAt'] ?? m['fechaEnvio'] ?? '').toString(),
+                (m['createdAt'] ?? m['fechaEnvio'] ?? m['fechaCreacion'] ?? '').toString(),
               ) ??
               DateTime.now();
           final timeStr =
@@ -107,7 +108,7 @@ class ChatNotifier extends StateNotifier<Map<String, List<ChatMessage>>> {
     return null;
   }
 
-  Future<void> sendMessage(String conversationId, String text, {String? participantId}) async {
+  Future<String?> sendMessage(String conversationId, String text, {String? participantId}) async {
     try {
       String targetConvId = conversationId;
       if (conversationId.startsWith('new_')) {
@@ -135,14 +136,17 @@ class ChatNotifier extends StateNotifier<Map<String, List<ChatMessage>>> {
       if (targetConvId != conversationId) {
         state = {...state, conversationId: state[targetConvId] ?? []};
       }
+      _ref?.invalidate(conversationsProvider);
+      return targetConvId;
     } catch (_) {}
+    return null;
   }
 }
 
 final chatProvider =
     StateNotifierProvider<ChatNotifier, Map<String, List<ChatMessage>>>((ref) {
       final apiClient = ref.read(apiClientProvider);
-      return ChatNotifier(apiClient);
+      return ChatNotifier(apiClient, ref);
     });
 
 final conversationsProvider = FutureProvider<List<ConversationData>>((
