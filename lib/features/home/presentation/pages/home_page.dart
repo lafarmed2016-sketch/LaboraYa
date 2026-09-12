@@ -11,6 +11,8 @@ import 'package:laboraya_app/features/profile/presentation/providers/profile_pro
 import 'package:laboraya_app/features/notifications/presentation/providers/notifications_provider.dart';
 
 class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
+
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
 }
