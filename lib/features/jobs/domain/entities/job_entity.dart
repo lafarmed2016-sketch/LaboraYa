@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:laboraya_app/app/config/env_config.dart';
 
@@ -215,13 +214,7 @@ class JobEntity {
         return null;
       }
     }
-    if (formatted.startsWith('http')) {
-      return NetworkImage(formatted);
-    }
-    if (File(formatted).existsSync()) {
-      return FileImage(File(formatted));
-    }
-    return null;
+    return NetworkImage(formatted);
   }
 
   static Widget buildImageWidget(
@@ -246,15 +239,8 @@ class JobEntity {
         return fallbackBuilder?.call() ?? const SizedBox.shrink();
       }
     }
-    if (formatted.startsWith('http')) {
-      return Image.network(
-        formatted,
-        fit: fit,
-        errorBuilder: (_, __, ___) => fallbackBuilder?.call() ?? const SizedBox.shrink(),
-      );
-    }
-    return Image.file(
-      File(path),
+    return Image.network(
+      formatted,
       fit: fit,
       errorBuilder: (_, __, ___) => fallbackBuilder?.call() ?? const SizedBox.shrink(),
     );
