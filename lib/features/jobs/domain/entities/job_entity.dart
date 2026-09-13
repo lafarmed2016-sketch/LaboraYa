@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:laboraya_app/app/config/env_config.dart';
 
 class JobEntity {
@@ -214,7 +216,7 @@ class JobEntity {
         return null;
       }
     }
-    return NetworkImage(formatted);
+    return CachedNetworkImageProvider(formatted);
   }
 
   static Widget buildImageWidget(
@@ -239,10 +241,17 @@ class JobEntity {
         return fallbackBuilder?.call() ?? const SizedBox.shrink();
       }
     }
-    return Image.network(
-      formatted,
+    return CachedNetworkImage(
+      imageUrl: formatted,
       fit: fit,
-      errorBuilder: (_, __, ___) => fallbackBuilder?.call() ?? const SizedBox.shrink(),
+      placeholder: (ctx, url) => Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Container(
+          color: Colors.white,
+        ),
+      ),
+      errorWidget: (_, __, ___) => fallbackBuilder?.call() ?? const SizedBox.shrink(),
     );
   }
 
