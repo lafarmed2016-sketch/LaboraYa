@@ -24,6 +24,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   String _query = '';
   String? _selectedCategory; // null = "Para ti" (todos)
   String _userLocation = 'Lima, Peru';
+  /// ID SQL real del usuario (del storage) — fiable incluso con Google Sign In
+  String? _localUserId;
 
   // Chips de categoria estilo TikTok
   static const _categoryChips = [
@@ -46,7 +48,15 @@ class _HomePageState extends ConsumerState<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(jobsProvider.notifier).loadJobs(refresh: true);
       _loadUserLocation();
+      _loadLocalUserId();
     });
+  }
+
+  Future<void> _loadLocalUserId() async {
+    final id = await ref.read(secureStorageProvider).getUserId();
+    if (id != null && id.isNotEmpty && mounted) {
+      setState(() => _localUserId = id);
+    }
   }
 
   Future<void> _loadUserLocation() async {
@@ -63,9 +73,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   List<dynamic> _filter(List<dynamic> jobs, String? myId, String? myName) {
+    // Recopilar todos los posibles IDs del usuario actual
+    final myIds = <String>{};
+    if (myId != null && myId.isNotEmpty && myId != '0') myIds.add(myId.trim());
+    if (_localUserId != null && _localUserId!.isNotEmpty && _localUserId != '0') myIds.add(_localUserId!.trim());
+
     return jobs.where((j) {
       if (j is JobEntity) {
-        if (j.isMine(myId: myId, myName: myName)) return false;
+        // Ocultar trabajos propios comparando contra todos los IDs conocidos
+        final pubId = j.publisherId.trim();
+        if (myIds.any((id) => id == pubId)) return false;
+        // Fallback por nombre cuando los IDs no coinciden
+        if (myIds.isEmpty && j.isMine(myId: myId, myName: myName)) return false;
         // Filtro por chip de categoria
         if (_selectedCategory != null) {
           if (_selectedCategory == 'URGENT') {
