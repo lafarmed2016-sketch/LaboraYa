@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/core/network/api_client.dart';
 import 'package:laboraya_app/core/services/jobs_cache_service.dart';
+import 'package:laboraya_app/core/storage/secure_storage.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 // Jobs state
@@ -65,8 +66,9 @@ class JobsState {
 // Jobs Notifier
 class JobsNotifier extends StateNotifier<JobsState> {
   final ApiClient _apiClient;
+  final SecureStorage _storage;
 
-  JobsNotifier(this._apiClient) : super(const JobsState());
+  JobsNotifier(this._apiClient, this._storage) : super(const JobsState());
 
   Future<void> loadJobs({bool refresh = false}) async {
     if (state.isLoading) return;
@@ -330,6 +332,24 @@ class JobsNotifier extends StateNotifier<JobsState> {
       }
 
       if (isSuccess) {
+        // Extraer y guardar el empleadorId del job recién creado
+        // para que el filtro del feed funcione aunque la tabla personas esté vacía
+        try {
+          final responseData = (response?.data) as Map?;
+          if (responseData != null) {
+            final jobData = responseData['datos'] ?? responseData['data'] ?? responseData;
+            final empId = (
+              jobData is Map ? (
+                jobData['empleadorId'] ?? jobData['EmpleadorId'] ??
+                jobData['publisherId'] ?? jobData['PublisherId']
+              ) : null
+            )?.toString();
+            if (empId != null && empId.isNotEmpty && empId != '0') {
+              await _storage.saveUserId(empId);
+            }
+          }
+        } catch (_) {}
+
         await loadJobs(refresh: true);
         return true;
       }
@@ -376,7 +396,8 @@ class JobsNotifier extends StateNotifier<JobsState> {
 // Client Provider
 final jobsClientProvider = Provider<JobsNotifier>((ref) {
   final apiClient = ref.read(apiClientProvider);
-  final notifier = JobsNotifier(apiClient);
+  final storage = ref.read(secureStorageProvider);
+  final notifier = JobsNotifier(apiClient, storage);
   notifier.loadJobs(refresh: true);
   return notifier;
 });
@@ -384,7 +405,8 @@ final jobsClientProvider = Provider<JobsNotifier>((ref) {
 // Provider
 final jobsProvider = StateNotifierProvider<JobsNotifier, JobsState>((ref) {
   final apiClient = ref.read(apiClientProvider);
-  final notifier = JobsNotifier(apiClient);
+  final storage = ref.read(secureStorageProvider);
+  final notifier = JobsNotifier(apiClient, storage);
   notifier.loadJobs(refresh: true);
   return notifier;
 });

@@ -150,20 +150,18 @@ class RealAuthService implements AuthService {
     final lastName = names.length > 1 ? names.sublist(1).join(' ') : 'Google';
 
     try {
+      // Intentar login primero (usuario ya existe)
       return await login(email: email, password: googleId);
     } catch (_) {
-      try {
-        return await register(
-          firstName: firstName,
-          lastName: lastName,
-          email: email,
-          phone: '999999999',
-          password: googleId,
-          userType: 'Cliente',
-        );
-      } catch (e) {
-        rethrow;
-      }
+      // Usuario nuevo: registrar (esto también crea el registro en personas)
+      return await register(
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        phone: '999999999',
+        password: googleId,
+        userType: 'Cliente',
+      );
     }
   }
 
@@ -213,9 +211,32 @@ class RealAuthService implements AuthService {
               await login(email: email, password: password);
             } catch (e) {
               print('Auto-login failed after registration: $e');
-              // We still return true because registration succeeded, 
-              // but you could also throw here if you want to fail the whole process.
             }
+
+            // Crear el registro en tabla personas inmediatamente después del registro
+            // Esto es necesario porque el endpoint /Registrar solo crea en tabla usuarios
+            try {
+              await apiClient.put(
+                ApiConstants.userProfile,
+                data: {
+                  'Nombres': firstName.trim(),
+                  'Apellidos': lastName.trim(),
+                  'Correo': email.trim(),
+                  'Telefono': phone.trim(),
+                  'Distrito': '',
+                  'Descripcion': '',
+                  'PrecioHora': 0,
+                  'firstName': firstName.trim(),
+                  'lastName': lastName.trim(),
+                  'email': email.trim(),
+                  'phone': phone.trim(),
+                },
+              );
+            } catch (e) {
+              // No interrumpir el flujo si falla — el usuario puede completar su perfil después
+              print('Personas record creation failed (non-critical): $e');
+            }
+
             return true;
           } else {
             final mensaje = data['mensaje'] ?? 'No se pudo crear la cuenta.';

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
+import 'package:laboraya_app/core/network/api_client.dart';
 import 'package:laboraya_app/core/services/jobs_cache_service.dart';
 import 'package:laboraya_app/core/storage/secure_storage.dart';
 import 'package:laboraya_app/core/widgets/app_empty_state.dart';
@@ -53,8 +55,66 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _loadLocalUserId() async {
-    final id = await ref.read(secureStorageProvider).getUserId();
-    if (id != null && id.isNotEmpty && mounted) {
+    final storage = ref.read(secureStorageProvider);
+
+    // Paso 1: intentar leer del storage (ya guardado en logins previos)
+    String? id = await storage.getUserId();
+
+    // Paso 2: si no hay ID en storage, llamar MisPublicaciones para extraer
+    // el empleadorId real que asigna el backend desde el token de sesión.
+    // Esto funciona aunque la tabla personas esté vacía.
+    if (id == null || id.isEmpty || id == '0') {
+      try {
+        final apiClient = ref.read(apiClientProvider);
+        final resp = await apiClient.get(
+          ApiConstants.jobsMine,
+          queryParameters: {'page': 1, 'pageSize': 1},
+        );
+        final data = resp.data;
+        if (data is Map) {
+          final list = data['datos'] ?? data['data'] ?? data['results'];
+          if (list is List && list.isNotEmpty) {
+            final firstJob = list.first;
+            if (firstJob is Map) {
+              final empId = (
+                firstJob['empleadorId'] ??
+                firstJob['EmpleadorId'] ??
+                firstJob['publisherId'] ??
+                firstJob['PublisherId']
+              )?.toString();
+              if (empId != null && empId.isNotEmpty && empId != '0') {
+                id = empId;
+                // Guardar para no volver a consultar
+                await storage.saveUserId(empId);
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Paso 3: intentar con el endpoint Contexto como último recurso
+    if ((id == null || id.isEmpty || id == '0') && mounted) {
+      try {
+        final apiClient = ref.read(apiClientProvider);
+        final resp = await apiClient.get(ApiConstants.contexto);
+        final data = resp.data;
+        if (data is Map) {
+          final u = data['datos'] ?? data['data'] ?? data;
+          if (u is Map) {
+            final ctxId = (
+              u['id'] ?? u['Id'] ?? u['usuarioId'] ?? u['UsuarioId']
+            )?.toString();
+            if (ctxId != null && ctxId.isNotEmpty && ctxId != '0') {
+              id = ctxId;
+              await storage.saveUserId(ctxId);
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (id != null && id.isNotEmpty && id != '0' && mounted) {
       setState(() => _localUserId = id);
     }
   }
