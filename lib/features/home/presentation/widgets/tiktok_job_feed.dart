@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
+import 'package:laboraya_app/core/services/jobs_cache_service.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 import 'package:laboraya_app/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:laboraya_app/features/home/presentation/widgets/job_card.dart';
@@ -95,13 +95,49 @@ class TikTokJobCard extends ConsumerStatefulWidget {
   ConsumerState<TikTokJobCard> createState() => _TikTokJobCardState();
 }
 
-class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
+class _TikTokJobCardState extends ConsumerState<TikTokJobCard>
+    with SingleTickerProviderStateMixin {
   final PageController _imagePageController = PageController();
   int _currentImageIndex = 0;
+  int _viewCount = 0; // Vistas acumuladas (persiste con SharedPreferences)
+  bool get _hasViews => _viewCount > 0; // Getter para evitar false-positive del analyzer
+
+  // Animación de entrada del panel inferior (slide + fade)
+  late final AnimationController _entryCtrl;
+  late final Animation<double> _fadeAnim;
+  late final Animation<Offset> _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _fadeAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.18),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
+
+    // Iniciar animación de entrada con pequeño delay
+    Future.delayed(const Duration(milliseconds: 80), () {
+      if (mounted) _entryCtrl.forward();
+    });
+
+    // Incrementar y cargar contador de vistas
+    _loadAndIncrementViews();
+  }
+
+  Future<void> _loadAndIncrementViews() async {
+    final count = await JobsCacheService.incrementViews(widget.job.id);
+    if (mounted) setState(() => _viewCount = count);
+  }
 
   @override
   void dispose() {
     _imagePageController.dispose();
+    _entryCtrl.dispose();
     super.dispose();
   }
 
@@ -564,15 +600,19 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
             ),
           ),
 
-          // ── 5. Panel de Información Inferior (Izquierda - TikTok) ────
+          // ── 5. Panel de Información Inferior (con animación) ────────
           Positioned(
             left: 16,
             right: 80,
             bottom: 24,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                 // Nombre del empleador
                 Row(
                   children: [
@@ -709,27 +749,51 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
                 ),
                 const SizedBox(height: 8),
 
-                // Ubicación
+                // Ubicacion + Contador de Vistas
                 Row(
                   children: [
-                    const Icon(
-                      Icons.location_on_rounded,
-                      size: 14,
-                      color: Colors.white70,
-                    ),
+                    const Icon(Icons.location_on_rounded, size: 14, color: Colors.white70),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        '${widget.job.address ?? "Miraflores, Lima"} • 0.5 km',
+                        widget.job.address ?? 'Lima, Peru',
                         style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          color: Colors.white70,
+                          fontFamily: 'Poppins', fontSize: 12, color: Colors.white70,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (_hasViews) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.remove_red_eye_rounded,
+                              size: 11, color: Colors.white60,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _viewCount >= 1000
+                                  ? '${(_viewCount / 1000).toStringAsFixed(1)}k'
+                                  : '$_viewCount',
+                              style: const TextStyle(
+                                fontFamily: 'Poppins', fontSize: 10,
+                                color: Colors.white70, fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -787,7 +851,9 @@ class _TikTokJobCardState extends ConsumerState<TikTokJobCard> {
                     ),
                   ),
                 ),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -898,3 +964,4 @@ IconData _categoryIcon(String cat) {
       return Icons.work_rounded;
   }
 }
+

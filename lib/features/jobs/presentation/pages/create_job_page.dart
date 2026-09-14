@@ -103,7 +103,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
   LatLng? _location;
   String? _locationLabel;
   bool _gpsLoading  = false;
-  List<File> _photos = [];
+  final List<File> _photos = [];
   bool _isLoading   = false;
   String? _error;
   AutovalidateMode _autovalidate = AutovalidateMode.disabled;
@@ -121,6 +121,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _Select2CategoryModal(
         initialCategory: _selectedCategory,
@@ -170,6 +171,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
         }
       });
     } else {
+      if (!mounted) return;
       final single = await ImagePickerService.pickSingleImage(context);
       if (single != null) {
         setState(() {
@@ -188,6 +190,18 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
     if (!_formKey.currentState!.validate()) return;
     if (_location == null) {
       setState(() => _error = 'Por favor indica la ubicación del trabajo.');
+      return;
+    }
+    // Validación obligatoria de foto
+    if (_photos.isEmpty) {
+      setState(() => _error = 'Debes agregar al menos una foto referente del trabajo.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📷 Agrega una foto referente del trabajo para continuar.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
@@ -233,12 +247,12 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al publicar: $e'),
+          content: Text('Error al publicar: ${e.toString().replaceAll('Exception: ', '')}'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -472,11 +486,37 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                         ),
                         const SizedBox(height: 22),
 
-                        // 5 ── ¿Deseas agregar fotos del trabajo? ───────
-                        const _Question(number: '5', text: '¿Deseas agregar fotos del trabajo?', optional: true),
+                        // 5 ── Foto referente del trabajo (OBLIGATORIO) ──
+                        Row(
+                          children: [
+                            const _Question(number: '5', text: 'Agregar foto del trabajo'),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text('Obligatorio',
+                                  style: TextStyle(
+                                      fontFamily: 'Poppins', fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.error)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Agrega una foto referente del trabajo para que los trabajadores entiendan mejor',
+                          style: TextStyle(
+                            fontFamily: 'Poppins', fontSize: 11.5,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         SizedBox(
-                          height: 100,
+                          height: 104,
                           child: ListView(
                             scrollDirection: Axis.horizontal,
                             children: [
@@ -488,23 +528,35 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                                   height: 100,
                                   margin: const EdgeInsets.only(right: 12),
                                   decoration: BoxDecoration(
-                                    color: AppColors.background,
+                                    color: _photos.isEmpty
+                                        ? AppColors.error.withValues(alpha: 0.06)
+                                        : AppColors.background,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.6), width: 1.5),
+                                    border: Border.all(
+                                      color: _photos.isEmpty
+                                          ? AppColors.error.withValues(alpha: 0.5)
+                                          : AppColors.primary.withValues(alpha: 0.6),
+                                      width: 1.5,
+                                    ),
                                   ),
-                                  child: const Column(
+                                  child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.add_a_photo_rounded, color: AppColors.primary, size: 28),
-                                      SizedBox(height: 4),
+                                      Icon(
+                                        Icons.add_a_photo_rounded,
+                                        color: _photos.isEmpty ? AppColors.error : AppColors.primary,
+                                        size: 28,
+                                      ),
+                                      const SizedBox(height: 4),
                                       Text(
-                                        '+ Fotos',
+                                        _photos.isEmpty ? 'Agregar foto' : '+ Más fotos',
                                         style: TextStyle(
                                           fontFamily: 'Poppins',
-                                          fontSize: 12,
+                                          fontSize: 11,
                                           fontWeight: FontWeight.w700,
-                                          color: AppColors.primary,
+                                          color: _photos.isEmpty ? AppColors.error : AppColors.primary,
                                         ),
+                                        textAlign: TextAlign.center,
                                       ),
                                     ],
                                   ),
@@ -515,6 +567,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                                 final idx = entry.key;
                                 final f = entry.value;
                                 return Stack(
+                                  clipBehavior: Clip.none,
                                   children: [
                                     Container(
                                       width: 100,
@@ -526,20 +579,29 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                                       ),
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(13),
-                                        child: Image.file(f, fit: BoxFit.cover, width: 100, height: 100),
+                                        child: Image.file(
+                                          f,
+                                          fit: BoxFit.cover,
+                                          filterQuality: FilterQuality.medium,
+                                          errorBuilder: (ctx, err, _) => Container(
+                                            color: AppColors.background,
+                                            child: const Icon(Icons.broken_image_rounded,
+                                                color: AppColors.textHint, size: 32),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                     Positioned(
-                                      top: 4,
-                                      right: 16,
+                                      top: -4,
+                                      right: 8,
                                       child: GestureDetector(
                                         onTap: () => setState(() => _photos.removeAt(idx)),
                                         child: Container(
                                           padding: const EdgeInsets.all(4),
-                                           decoration: BoxDecoration(
-                                             color: Colors.black.withValues(alpha: 0.7),
-                                             shape: BoxShape.circle,
-                                           ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withValues(alpha: 0.75),
+                                            shape: BoxShape.circle,
+                                          ),
                                           child: const Icon(Icons.close, color: Colors.white, size: 14),
                                         ),
                                       ),
@@ -647,7 +709,7 @@ class _Select2CategoryModalState extends State<_Select2CategoryModal> {
   @override
   Widget build(BuildContext context) {
     final showSearchResults = _query.length >= 2;
-    
+
     final filteredCategories = showSearchResults
         ? _allPeruCategories.where((c) {
             final q = _query.toLowerCase();
@@ -660,8 +722,18 @@ class _Select2CategoryModalState extends State<_Select2CategoryModal> {
 
     final popularList = _allPeruCategories.where((c) => c.isPopular).toList();
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
+    // ── Clave: altura adaptativa al teclado (estilo TikTok/apps modernas) ──
+    final mq = MediaQuery.of(context);
+    final keyboardHeight = mq.viewInsets.bottom;
+    final screenHeight = mq.size.height;
+    // Cuando el teclado sube, la altura disponible se reduce automáticamente
+    final availableHeight = screenHeight - keyboardHeight - mq.padding.top - mq.padding.bottom;
+    final modalHeight = (availableHeight * 0.92).clamp(300.0, screenHeight * 0.92);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      height: modalHeight,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -731,7 +803,7 @@ class _Select2CategoryModalState extends State<_Select2CategoryModal> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
               controller: _searchCtrl,
-              autofocus: true,
+              autofocus: false,
               style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Escribe oficio (ej. gasfitería, pintura, chofer)...',
@@ -912,7 +984,7 @@ class _Select2CategoryModalState extends State<_Select2CategoryModal> {
           ),
         ],
       ),
-    );
+    ); // close AnimatedContainer
   }
 }
 

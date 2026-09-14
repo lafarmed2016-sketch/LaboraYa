@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/core/network/api_client.dart';
+import 'package:laboraya_app/core/services/jobs_cache_service.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 
 // Jobs state
@@ -16,6 +17,10 @@ class JobsState {
   final String? searchQuery;
   final String? categoryFilter;
   final String? modalityFilter;
+  /// true cuando los datos vienen del caché local (modo offline / stale)
+  final bool isFromCache;
+  /// true cuando el caché se está refrescando en background
+  final bool isRefreshingInBackground;
 
   const JobsState({
     this.jobs = const [],
@@ -26,6 +31,8 @@ class JobsState {
     this.searchQuery,
     this.categoryFilter,
     this.modalityFilter,
+    this.isFromCache = false,
+    this.isRefreshingInBackground = false,
   });
 
   JobsState copyWith({
@@ -37,6 +44,8 @@ class JobsState {
     String? searchQuery,
     String? categoryFilter,
     String? modalityFilter,
+    bool? isFromCache,
+    bool? isRefreshingInBackground,
   }) {
     return JobsState(
       jobs: jobs ?? this.jobs,
@@ -47,6 +56,8 @@ class JobsState {
       searchQuery: searchQuery ?? this.searchQuery,
       categoryFilter: categoryFilter ?? this.categoryFilter,
       modalityFilter: modalityFilter ?? this.modalityFilter,
+      isFromCache: isFromCache ?? this.isFromCache,
+      isRefreshingInBackground: isRefreshingInBackground ?? this.isRefreshingInBackground,
     );
   }
 }
@@ -61,8 +72,35 @@ class JobsNotifier extends StateNotifier<JobsState> {
     if (state.isLoading) return;
 
     final page = refresh ? 1 : state.currentPage;
-    state = state.copyWith(isLoading: true, error: null);
 
+    // ── Stale-While-Revalidate ─────────────────────────────────────
+    // 1. Si es refresh y hay caché, mostrarlo INMEDIATAMENTE (sin loader)
+    if (refresh && page == 1) {
+      final cached = await JobsCacheService.loadJobs();
+      if (cached != null && cached.isNotEmpty) {
+        final cachedJobs = cached
+            .map((j) => JobEntity.fromJson(j))
+            .toList();
+        // Mostrar caché instantáneamente mientras cargamos en background
+        state = state.copyWith(
+          jobs: cachedJobs,
+          isLoading: false,
+          isFromCache: true,
+          isRefreshingInBackground: true,
+          error: null,
+        );
+        // Ahora refrescar en background sin bloquear la UI
+        _fetchFromApi(page: 1, refresh: true);
+        return;
+      }
+    }
+
+    // Sin caché: mostrar loader normal y cargar
+    state = state.copyWith(isLoading: true, error: null, isFromCache: false);
+    await _fetchFromApi(page: page, refresh: refresh);
+  }
+
+  Future<void> _fetchFromApi({required int page, required bool refresh}) async {
     try {
       dynamic data;
       try {
@@ -81,40 +119,17 @@ class JobsNotifier extends StateNotifier<JobsState> {
       } catch (_) {
         final response = await _apiClient.get(
           ApiConstants.jobs,
-          queryParameters: {
-            'page': page,
-            'pageSize': 50,
-          },
+          queryParameters: {'page': page, 'pageSize': 50},
         );
         data = response.data;
-      }
-
-      if (data == null || (data is String && data.trim().isEmpty)) {
-        state = state.copyWith(
-          jobs: refresh ? [] : state.jobs,
-          isLoading: false,
-          hasMore: false,
-        );
-        return;
       }
 
       List rawList = [];
       if (data is List) {
         rawList = data;
       } else if (data is Map) {
-        if (data['data'] is List) {
-          rawList = data['data'] as List;
-        } else if (data['datos'] is List) {
-          rawList = data['datos'] as List;
-        } else if (data['items'] is List) {
-          rawList = data['items'] as List;
-        } else if (data['jobs'] is List) {
-          rawList = data['jobs'] as List;
-        } else if (data['trabajos'] is List) {
-          rawList = data['trabajos'] as List;
-        } else if (data['result'] is List) {
-          rawList = data['result'] as List;
-        }
+        rawList = (data['data'] ?? data['datos'] ?? data['items'] ??
+            data['jobs'] ?? data['trabajos'] ?? data['result'] ?? []) as List;
       }
 
       if (rawList.isNotEmpty) {
@@ -122,17 +137,45 @@ class JobsNotifier extends StateNotifier<JobsState> {
             .map((j) => JobEntity.fromJson(Map<String, dynamic>.from(j as Map)))
             .toList();
 
+        // Guardar en caché después de cada fetch exitoso
+        try {
+          final rawMaps = rawList.map((j) => Map<String, dynamic>.from(j as Map)).toList();
+          await JobsCacheService.saveJobs(rawMaps);
+        } catch (_) {}
+
         state = state.copyWith(
           jobs: refresh ? jobsList : [...state.jobs, ...jobsList],
           isLoading: false,
+          isRefreshingInBackground: false,
+          isFromCache: false,
           hasMore: false,
           currentPage: page + 1,
+          error: null,
+        );
+      } else {
+        // Sin datos de API — si ya tenemos caché, no sobreescribir con vacío
+        if (state.jobs.isNotEmpty) {
+          state = state.copyWith(
+            isLoading: false,
+            isRefreshingInBackground: false,
+            error: null,
+          );
+        } else {
+          _loadDemoJobs();
+        }
+      }
+    } catch (e) {
+      // Si falla la API pero tenemos datos (caché o previos), no mostrar error
+      if (state.jobs.isNotEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          isRefreshingInBackground: false,
+          isFromCache: true,
+          error: null,
         );
       } else {
         _loadDemoJobs();
       }
-    } catch (e) {
-      _loadDemoJobs();
     }
   }
 
@@ -325,11 +368,78 @@ class JobsNotifier extends StateNotifier<JobsState> {
   }
 
   void _loadDemoJobs() {
+    // Datos demo reales para cuando la API no responde
+    final now = DateTime.now();
+    final demoJobs = [
+      JobEntity(
+        id: 'demo_1', title: 'Reparar tubería con fuga en baño',
+        description: 'Necesito un gasfitero urgente para reparar una tubería que gotea en el baño. Traer herramientas propias.',
+        categoryId: '1', categoryName: 'Gasfitería',
+        address: 'Miraflores, Lima', latitude: -12.1219, longitude: -77.0306,
+        modality: 'FIXED', budgetMin: 80, budgetMax: 150,
+        publisherId: 'demo_pub_1', publisherName: 'Carlos M.',
+        createdAt: now.subtract(const Duration(hours: 2)),
+        isUrgent: true, workersNeeded: 1, materials: 'TO_COORDINATE',
+      ),
+      JobEntity(
+        id: 'demo_2', title: 'Pintar sala y comedor completo',
+        description: 'Sala de 4x5m y comedor de 3x3m. Se necesita empaste previo en algunas áreas. Incluir materiales.',
+        categoryId: '3', categoryName: 'Pintura',
+        address: 'San Isidro, Lima', latitude: -12.0972, longitude: -77.0336,
+        modality: 'FIXED', budgetMin: 350, budgetMax: 500,
+        publisherId: 'demo_pub_2', publisherName: 'María G.',
+        createdAt: now.subtract(const Duration(hours: 5)),
+        workersNeeded: 1, materials: 'TO_COORDINATE',
+      ),
+      JobEntity(
+        id: 'demo_3', title: 'Instalación de tomacorrientes en cocina',
+        description: 'Instalar 3 tomacorrientes dobles en la cocina y revisar el tablero eléctrico.',
+        categoryId: '2', categoryName: 'Electricidad',
+        address: 'Surco, Lima', latitude: -12.1508, longitude: -76.9936,
+        modality: 'FIXED', budgetMin: 120, budgetMax: 200,
+        publisherId: 'demo_pub_3', publisherName: 'Roberto S.',
+        createdAt: now.subtract(const Duration(hours: 8)),
+        workersNeeded: 1, materials: 'TO_COORDINATE',
+      ),
+      JobEntity(
+        id: 'demo_4', title: 'Mudanza de departamento en Barranco',
+        description: 'Mudanza completa de un depa de 2 habitaciones. Se necesitan 2 personas y camioneta.',
+        categoryId: '10', categoryName: 'Mudanzas',
+        address: 'Barranco, Lima', latitude: -12.1521, longitude: -77.0206,
+        modality: 'FIXED', budgetMin: 200, budgetMax: 350,
+        publisherId: 'demo_pub_4', publisherName: 'Ana P.',
+        createdAt: now.subtract(const Duration(hours: 1)),
+        workersNeeded: 2, materials: 'TO_COORDINATE',
+      ),
+      JobEntity(
+        id: 'demo_5', title: 'Formateo y limpieza de laptop HP',
+        description: 'Laptop muy lenta. Necesita formateo, instalación de Windows 11 y drivers. Traer el técnico a casa.',
+        categoryId: '9', categoryName: 'Sistemas y PC',
+        address: 'La Molina, Lima', latitude: -12.0819, longitude: -76.9419,
+        modality: 'FIXED', budgetMin: 60, budgetMax: 100,
+        publisherId: 'demo_pub_5', publisherName: 'Luis F.',
+        createdAt: now.subtract(const Duration(hours: 3)),
+        workersNeeded: 1, materials: 'TO_COORDINATE',
+      ),
+      JobEntity(
+        id: 'demo_6', title: 'Colocación de cerámico en baño',
+        description: 'Baño de 2x2m. Ya tengo los cerámicos y el pegamento. Solo necesito el maestro para instalar.',
+        categoryId: '4', categoryName: 'Albañilería',
+        address: 'Chorrillos, Lima', latitude: -12.1711, longitude: -77.0144,
+        modality: 'FIXED', budgetMin: 180, budgetMax: 250,
+        publisherId: 'demo_pub_6', publisherName: 'Juan V.',
+        createdAt: now.subtract(const Duration(hours: 12)),
+        workersNeeded: 1, materials: 'BY_EMPLOYER',
+      ),
+    ];
+
     state = state.copyWith(
       isLoading: false,
+      isRefreshingInBackground: false,
+      isFromCache: false,
       hasMore: false,
       error: null,
-      jobs: state.jobs.isNotEmpty ? state.jobs : [],
+      jobs: state.jobs.isNotEmpty ? state.jobs : demoJobs,
     );
   }
 }
