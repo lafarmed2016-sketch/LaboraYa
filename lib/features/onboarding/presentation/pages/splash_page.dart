@@ -76,7 +76,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
     if (hasToken) {
       try {
-        // Validar si el usuario existe realmente en la base de datos SQL
+        // Validar si el usuario existe (API o datos locales de Google)
         final profile = await ref.read(profileProvider.future);
         if (!mounted) return;
         if (profile != null && profile.id.isNotEmpty && profile.id != '0') {
@@ -85,7 +85,16 @@ class _SplashPageState extends ConsumerState<SplashPage>
         }
       } catch (_) {}
 
-      // Si no existe el usuario en SQL o el token es inválido:
+      // Solo limpiar tokens si tampoco hay userId guardado localmente
+      // (Eso evita borrar la sesión de usuarios de Google Sign In)
+      final localUserId = await storage.getUserId();
+      if (localUserId != null && localUserId.isNotEmpty) {
+        // Hay datos locales válidos (ej: Google Sign In) — ir al home
+        if (!mounted) return;
+        context.go('/');
+        return;
+      }
+
       await storage.clearTokens();
       if (!mounted) return;
       if (!seenOnboarding) {

@@ -62,15 +62,15 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
 
     final response = await apiClient.get(ApiConstants.userProfile);
     final data = response.data;
-    if (data == null) return null;
+    if (data == null) return _buildLocalProfile(storage);
 
     if (data is Map && data['codigoRespuesta'] != null && data['codigoRespuesta'] != '0' && data['codigoRespuesta'] != 0) {
-      // Error de autenticación o usuario inexistente
-      return null;
+      // Error de autenticación o usuario inexistente — intentar perfil local
+      return _buildLocalProfile(storage);
     }
 
     final u = data is Map ? (data['datos'] ?? data['data'] ?? data) : null;
-    if (u == null || (u is Map && u.isEmpty)) return null;
+    if (u == null || (u is Map && u.isEmpty)) return _buildLocalProfile(storage);
 
     final id = (u['usuarioId'] ?? u['id'])?.toString();
     final names = (u['nombres'] ?? u['firstName'] ?? '').toString().trim();
@@ -84,9 +84,9 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
           : (u['usuario'] ?? u['username'] ?? '').toString().trim();
     }
 
-    // Si no hay ningún dato de identidad válido, el usuario no existe
+    // Si no hay ningún dato de identidad válido, intentar perfil local
     if (id == null || id.isEmpty || (displayName.isEmpty && (u['correo'] == null || u['correo'].toString().isEmpty))) {
-      return null;
+      return _buildLocalProfile(storage);
     }
 
     final rawAvatar = u['imagenPerfilUrl'] ??
@@ -123,6 +123,33 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
       createdAt: createdAtDate,
     );
   } catch (_) {
-    return null;
+    // En caso de error de red/API, intentar construir perfil desde datos locales
+    try {
+      final storage = ref.read(secureStorageProvider);
+      return _buildLocalProfile(storage);
+    } catch (_) {
+      return null;
+    }
   }
 });
+
+/// Construye un UserProfile mínimo desde datos guardados localmente.
+/// Esto cubre el caso de Google Sign In cuando el backend no reconoce el token Firebase.
+Future<UserProfile?> _buildLocalProfile(SecureStorage storage) async {
+  final userId = await storage.getUserId();
+  final username = await storage.getUsername();
+
+  // Si no hay userId local, el usuario realmente no está autenticado
+  if (userId == null || userId.isEmpty) return null;
+
+  final parts = (username ?? 'Usuario Google').trim().split(' ');
+  final firstName = parts.isNotEmpty ? parts.first : 'Usuario';
+  final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+  return UserProfile(
+    id: userId,
+    email: '',
+    firstName: firstName.isNotEmpty ? firstName : 'Usuario',
+    lastName: lastName,
+  );
+}

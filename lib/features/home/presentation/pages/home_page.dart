@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
@@ -100,8 +100,15 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<UserProfile?>>(profileProvider, (prev, next) {
       if (next.hasValue && next.value == null) {
-        ref.read(secureStorageProvider).clearTokens();
-        if (mounted) context.go('/auth/login');
+        // Verificar si hay datos locales válidos (ej: Google Sign In)
+        // antes de limpiar tokens y botar al usuario
+        ref.read(secureStorageProvider).getUserId().then((localId) {
+          if (localId == null || localId.isEmpty) {
+            ref.read(secureStorageProvider).clearTokens();
+            // ignore: use_build_context_synchronously
+            if (mounted) context.go('/auth/login');
+          }
+        });
       }
     });
 
