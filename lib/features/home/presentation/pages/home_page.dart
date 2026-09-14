@@ -118,7 +118,13 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<UserProfile?>>(profileProvider, (prev, next) {
-      if (next.hasValue && next.value == null) {
+      if (next.hasValue && next.value != null) {
+        // Actualizar el ID local cuando el perfil carga exitosamente del backend
+        final sqlId = next.value!.id;
+        if (sqlId.isNotEmpty && sqlId != '0' && sqlId != _localUserId) {
+          setState(() => _localUserId = sqlId);
+        }
+      } else if (next.hasValue && next.value == null) {
         // Verificar si hay datos locales válidos (ej: Google Sign In)
         // antes de limpiar tokens y botar al usuario
         ref.read(secureStorageProvider).getUserId().then((localId) {

@@ -99,7 +99,7 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
     final rawDate = u['fechaCreacion'] ?? u['FechaCreacion'] ?? u['fechaRegistro'] ?? u['FechaRegistro'] ?? u['createdAt'] ?? u['CreatedAt'];
     final createdAtDate = rawDate != null ? DateTime.tryParse(rawDate.toString()) : null;
 
-    return UserProfile(
+    final profile = UserProfile(
       id: id,
       email: (u['correo'] ?? u['email'] ?? '').toString(),
       phone: (u['telefono'] ?? u['phone'])?.toString(),
@@ -122,6 +122,9 @@ final profileProvider = FutureProvider<UserProfile?>((ref) async {
       hourlyRate: (u['precioHora'] as num?)?.toDouble(),
       createdAt: createdAtDate,
     );
+    // Sincronizar el ID SQL real al storage para que el filtro del feed funcione siempre
+    try { await storage.saveUserId(profile.id); } catch (_) {}
+    return profile;
   } catch (_) {
     // En caso de error de red/API, intentar construir perfil desde datos locales
     try {

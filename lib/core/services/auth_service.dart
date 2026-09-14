@@ -99,18 +99,31 @@ class RealAuthService implements AuthService {
       }
 
       final token = authData['tokenLogeo']?.toString();
-      final userId = authData['id']?.toString();
-      final username = authData['usuario']?.toString();
+      // El backend puede devolver el ID con distintos nombres
+      final userId = (
+        authData['id'] ??
+        authData['Id'] ??
+        authData['usuarioId'] ??
+        authData['UsuarioId'] ??
+        authData['userId'] ??
+        authData['UserId']
+      )?.toString();
+      final username = (
+        authData['usuario'] ??
+        authData['Usuario'] ??
+        authData['username'] ??
+        authData['Username'] ??
+        authData['correo'] ??
+        authData['Correo']
+      )?.toString();
 
       if (token == null || token.trim().isEmpty) {
         throw Exception('El servidor validó el usuario, pero no devolvió un token.');
       }
 
       await storage.saveAccessToken(token);
-      // Solo guardar en RefreshToken si también se necesita como fallback
-      // await storage.saveRefreshToken(token); 
-      
-      if (userId != null && userId.isNotEmpty) {
+
+      if (userId != null && userId.isNotEmpty && userId != '0') {
         await storage.saveUserId(userId);
       }
       if (username != null && username.isNotEmpty) {

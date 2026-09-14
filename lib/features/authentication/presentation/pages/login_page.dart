@@ -164,8 +164,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
       // 4. Iniciar sesión / registrar en el Backend C# (WorkGoApp V2 API)
       final authService = ref.read(authServiceProvider);
+      bool backendOk = false;
       try {
-        await authService.loginWithGoogleAccount(
+        backendOk = await authService.loginWithGoogleAccount(
           email: user.email ?? googleAccount.email,
           googleId: user.uid,
           displayName: user.displayName ?? googleAccount.displayName ?? 'Usuario Google',
@@ -179,6 +180,18 @@ class _LoginPageState extends ConsumerState<LoginPage>
           await storage.saveUserId(user.uid);
           await storage.saveUsername(user.displayName ?? user.email ?? '');
         }
+      }
+
+      // Si el backend autenticó correctamente, intentar obtener el SQL ID real
+      // para que el filtro del feed oculte los propios trabajos
+      if (backendOk) {
+        try {
+          final profile = await ref.read(profileProvider.future);
+          if (profile != null && profile.id.isNotEmpty) {
+            final storage = ref.read(secureStorageProvider);
+            await storage.saveUserId(profile.id);
+          }
+        } catch (_) {}
       }
 
       if (!mounted) return;
