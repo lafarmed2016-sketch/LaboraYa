@@ -154,15 +154,12 @@ class JobsNotifier extends StateNotifier<JobsState> {
         );
       } else {
         // Sin datos de API — si ya tenemos caché, no sobreescribir con vacío
-        if (state.jobs.isNotEmpty) {
-          state = state.copyWith(
-            isLoading: false,
-            isRefreshingInBackground: false,
-            error: null,
-          );
-        } else {
-          _loadDemoJobs();
-        }
+        state = state.copyWith(
+          isLoading: false,
+          isRefreshingInBackground: false,
+          error: null,
+          jobs: state.jobs.isNotEmpty ? state.jobs : [],
+        );
       }
     } catch (e) {
       // Si falla la API pero tenemos datos (caché o previos), no mostrar error
@@ -174,7 +171,13 @@ class JobsNotifier extends StateNotifier<JobsState> {
           error: null,
         );
       } else {
-        _loadDemoJobs();
+        // Sin caché ni conexión — estado vacío sin error forzado
+        state = state.copyWith(
+          isLoading: false,
+          isRefreshingInBackground: false,
+          jobs: [],
+          error: 'Sin conexión. Verifica tu internet y vuelve a intentarlo.',
+        );
       }
     }
   }
@@ -367,81 +370,7 @@ class JobsNotifier extends StateNotifier<JobsState> {
     loadJobs(refresh: true);
   }
 
-  void _loadDemoJobs() {
-    // Datos demo reales para cuando la API no responde
-    final now = DateTime.now();
-    final demoJobs = [
-      JobEntity(
-        id: 'demo_1', title: 'Reparar tubería con fuga en baño',
-        description: 'Necesito un gasfitero urgente para reparar una tubería que gotea en el baño. Traer herramientas propias.',
-        categoryId: '1', categoryName: 'Gasfitería',
-        address: 'Miraflores, Lima', latitude: -12.1219, longitude: -77.0306,
-        modality: 'FIXED', budgetMin: 80, budgetMax: 150,
-        publisherId: 'demo_pub_1', publisherName: 'Carlos M.',
-        createdAt: now.subtract(const Duration(hours: 2)),
-        isUrgent: true, workersNeeded: 1, materials: 'TO_COORDINATE',
-      ),
-      JobEntity(
-        id: 'demo_2', title: 'Pintar sala y comedor completo',
-        description: 'Sala de 4x5m y comedor de 3x3m. Se necesita empaste previo en algunas áreas. Incluir materiales.',
-        categoryId: '3', categoryName: 'Pintura',
-        address: 'San Isidro, Lima', latitude: -12.0972, longitude: -77.0336,
-        modality: 'FIXED', budgetMin: 350, budgetMax: 500,
-        publisherId: 'demo_pub_2', publisherName: 'María G.',
-        createdAt: now.subtract(const Duration(hours: 5)),
-        workersNeeded: 1, materials: 'TO_COORDINATE',
-      ),
-      JobEntity(
-        id: 'demo_3', title: 'Instalación de tomacorrientes en cocina',
-        description: 'Instalar 3 tomacorrientes dobles en la cocina y revisar el tablero eléctrico.',
-        categoryId: '2', categoryName: 'Electricidad',
-        address: 'Surco, Lima', latitude: -12.1508, longitude: -76.9936,
-        modality: 'FIXED', budgetMin: 120, budgetMax: 200,
-        publisherId: 'demo_pub_3', publisherName: 'Roberto S.',
-        createdAt: now.subtract(const Duration(hours: 8)),
-        workersNeeded: 1, materials: 'TO_COORDINATE',
-      ),
-      JobEntity(
-        id: 'demo_4', title: 'Mudanza de departamento en Barranco',
-        description: 'Mudanza completa de un depa de 2 habitaciones. Se necesitan 2 personas y camioneta.',
-        categoryId: '10', categoryName: 'Mudanzas',
-        address: 'Barranco, Lima', latitude: -12.1521, longitude: -77.0206,
-        modality: 'FIXED', budgetMin: 200, budgetMax: 350,
-        publisherId: 'demo_pub_4', publisherName: 'Ana P.',
-        createdAt: now.subtract(const Duration(hours: 1)),
-        workersNeeded: 2, materials: 'TO_COORDINATE',
-      ),
-      JobEntity(
-        id: 'demo_5', title: 'Formateo y limpieza de laptop HP',
-        description: 'Laptop muy lenta. Necesita formateo, instalación de Windows 11 y drivers. Traer el técnico a casa.',
-        categoryId: '9', categoryName: 'Sistemas y PC',
-        address: 'La Molina, Lima', latitude: -12.0819, longitude: -76.9419,
-        modality: 'FIXED', budgetMin: 60, budgetMax: 100,
-        publisherId: 'demo_pub_5', publisherName: 'Luis F.',
-        createdAt: now.subtract(const Duration(hours: 3)),
-        workersNeeded: 1, materials: 'TO_COORDINATE',
-      ),
-      JobEntity(
-        id: 'demo_6', title: 'Colocación de cerámico en baño',
-        description: 'Baño de 2x2m. Ya tengo los cerámicos y el pegamento. Solo necesito el maestro para instalar.',
-        categoryId: '4', categoryName: 'Albañilería',
-        address: 'Chorrillos, Lima', latitude: -12.1711, longitude: -77.0144,
-        modality: 'FIXED', budgetMin: 180, budgetMax: 250,
-        publisherId: 'demo_pub_6', publisherName: 'Juan V.',
-        createdAt: now.subtract(const Duration(hours: 12)),
-        workersNeeded: 1, materials: 'BY_EMPLOYER',
-      ),
-    ];
 
-    state = state.copyWith(
-      isLoading: false,
-      isRefreshingInBackground: false,
-      isFromCache: false,
-      hasMore: false,
-      error: null,
-      jobs: state.jobs.isNotEmpty ? state.jobs : demoJobs,
-    );
-  }
 }
 
 // Client Provider
