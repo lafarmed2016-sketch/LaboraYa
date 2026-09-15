@@ -1,10 +1,12 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:laboraya_app/core/constants/api_constants.dart';
 import 'package:laboraya_app/core/constants/app_colors.dart';
+import 'package:laboraya_app/core/network/api_client.dart';
 import 'package:laboraya_app/core/services/location_service.dart';
+import 'package:laboraya_app/core/storage/secure_storage.dart';
 import 'package:laboraya_app/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:laboraya_app/features/jobs/domain/entities/job_entity.dart';
 import 'package:laboraya_app/features/jobs/presentation/providers/jobs_provider.dart';
@@ -23,6 +25,8 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
   final _sheetCtrl = DraggableScrollableController();
   Timer? _debounce;
   bool _searchOpen = false;
+  /// ID SQL real del usuario (del storage) — mismo patrón que home_page
+  String? _localUserId;
 
   // Tamaños del panel (fracción de pantalla)
   // _minSize bajo (0.065) permite ocultar el panel para ver el mapa 100% COMPLETO
@@ -32,6 +36,43 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
   static const double _maxSize = 0.88;
 
   String _currentSort = 'Más recientes';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadLocalUserId());
+  }
+
+  Future<void> _loadLocalUserId() async {
+    final storage = ref.read(secureStorageProvider);
+    String? id = await storage.getUserId();
+    if (id == null || id.isEmpty || id == '0') {
+      try {
+        final apiClient = ref.read(apiClientProvider);
+        final resp = await apiClient.get(
+          ApiConstants.jobsMine,
+          queryParameters: {'page': 1, 'pageSize': 1},
+        );
+        final data = resp.data;
+        if (data is Map) {
+          final list = data['datos'] ?? data['data'];
+          if (list is List && list.isNotEmpty) {
+            final firstJob = list.first;
+            if (firstJob is Map) {
+              final empId = (firstJob['empleadorId'] ?? firstJob['EmpleadorId'])?.toString();
+              if (empId != null && empId.isNotEmpty && empId != '0') {
+                id = empId;
+                await storage.saveUserId(empId);
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    if (id != null && id.isNotEmpty && id != '0' && mounted) {
+      setState(() => _localUserId = id);
+    }
+  }
 
   @override
   void dispose() {
@@ -132,8 +173,39 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
   Widget build(BuildContext context) {
     final jobsState = ref.watch(jobsProvider);
     final profile = ref.watch(profileProvider).value;
-    var otherJobs = jobsState.jobs
-        .where((j) => !j.isMine(myId: profile?.id, myName: profile?.fullName))
+
+    // Recopilar todos los IDs posibles del usuario actual
+    final myIds = <String>{};
+    if (profile?.id != null && profile!.id.isNotEmpty && profile.id != '0') myIds.add(profile.id.trim());
+    if (_localUserId != null && _localUserId!.isNotEmpty && _localUserId != '0') myIds.add(_localUserId!.trim());
+
+    // Filtrar trabajos propios de la lista
+    var otherJobs = jobsState.jobs.where((j) {
+      final pubId = j.publisherId.trim();
+      if (myIds.any((id) => id == pubId)) return false;
+      if (myIds.isEmpty && j.isMine(myId: profile?.id, myName: profile?.fullName)) return false;
+      return true;
+    }).toList();
+
+    // Markers del mapa: también sin los trabajos propios
+    final mapMarkers = jobsState.jobs
+        .where((j) {
+          if (j.latitude == null || j.longitude == null) return false;
+          final pubId = j.publisherId.trim();
+          if (myIds.any((id) => id == pubId)) return false;
+          if (myIds.isEmpty && j.isMine(myId: profile?.id, myName: profile?.fullName)) return false;
+          return true;
+        })
+        .map((j) => MapJobMarker(
+              id: j.id,
+              latitude: j.latitude!,
+              longitude: j.longitude!,
+              title: j.title,
+              price: j.formattedBudget,
+              categoryName: j.categoryName,
+              isUrgent: j.isUrgent,
+              onTap: () => _showJobModal(context, j),
+            ))
         .toList();
 
     // Ordenar trabajos según selección
@@ -160,19 +232,7 @@ class _SearchJobsPageState extends ConsumerState<SearchJobsPage> {
                 longitude: -77.0428,
                 zoom: 13,
                 height: screenH,
-                markers: jobsState.jobs
-                    .where((j) => j.latitude != null && j.longitude != null)
-                    .map((j) => MapJobMarker(
-                          id: j.id,
-                          latitude: j.latitude!,
-                          longitude: j.longitude!,
-                          title: j.title,
-                          price: j.formattedBudget,
-                          categoryName: j.categoryName,
-                          isUrgent: j.isUrgent,
-                          onTap: () => _showJobModal(context, j),
-                        ))
-                    .toList(),
+                markers: mapMarkers,
               ),
             ),
           ),
@@ -917,21 +977,28 @@ class _SearchJobTile extends ConsumerWidget {
 }
 
 // ─── Modal al presionar sobre un trabajo en el Mapa ───────────────────────────
-class _JobMapModalContent extends StatefulWidget {
+class _JobMapModalContent extends ConsumerStatefulWidget {
   final JobEntity job;
   const _JobMapModalContent({required this.job});
 
   @override
-  State<_JobMapModalContent> createState() => _JobMapModalContentState();
+  ConsumerState<_JobMapModalContent> createState() => _JobMapModalContentState();
 }
 
-class _JobMapModalContentState extends State<_JobMapModalContent> {
+class _JobMapModalContentState extends ConsumerState<_JobMapModalContent> {
   bool _showWarningBanner = true;
 
   @override
   Widget build(BuildContext context) {
     final job = widget.job;
     final isUnverified = !job.isPublisherVerified;
+    final profile = ref.watch(profileProvider).value;
+
+    // Detectar si es trabajo propio
+    final myId = profile?.id ?? '';
+    final pubId = job.publisherId.trim();
+    // Comparación directa de IDs conocidos
+    final isOwnJob = (myId.isNotEmpty && myId != '0' && myId == pubId);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -1146,32 +1213,57 @@ class _JobMapModalContentState extends State<_JobMapModalContent> {
             ),
             const SizedBox(height: 16),
 
-            // Botón ver detalle
+            // Botón ver detalle (o indicador si es trabajo propio)
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  context.push('/jobs/${job.id}');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Ver detalle del trabajo',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              child: isOwnJob
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.person_rounded, size: 18, color: Color(0xFF64748B)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Esta es tu publicación',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.push('/jobs/${job.id}');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Ver detalle del trabajo',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
             ),
           ],
         ),
