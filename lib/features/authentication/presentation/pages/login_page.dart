@@ -40,6 +40,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
   bool _isLoading   = false;
   String? _errorMessage;
   AutovalidateMode _autovalidate = AutovalidateMode.disabled;
+  // Para shake animation al fallar credenciales
+  final _shakeKey = GlobalKey<_ShakeWidgetState>();
 
   // ── Entrada suave ─────────────────────────────────────────────────────────
   late final AnimationController _fadeCtrl;
@@ -86,6 +88,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
         ref.invalidate(conversationsProvider);
         context.go('/');
       } else {
+        _shakeKey.currentState?.shake();
         setState(() {
           _errorMessage = 'Correo o contraseña incorrectos.';
           _isLoading    = false;
@@ -93,6 +96,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       }
     } on DioException catch (e) {
       if (!mounted) return;
+      _shakeKey.currentState?.shake();
       setState(() {
         _errorMessage = _messageFromDio(e);
         _isLoading    = false;
@@ -100,6 +104,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
     } on Exception catch (e) {
       if (!mounted) return;
       final raw = e.toString().replaceFirst('Exception: ', '').trim();
+      _shakeKey.currentState?.shake();
       setState(() {
         _errorMessage = raw.isNotEmpty
             ? raw
@@ -108,6 +113,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       });
     } catch (_) {
       if (!mounted) return;
+      _shakeKey.currentState?.shake();
       setState(() {
         _errorMessage = 'Ocurrió un error inesperado. Intenta de nuevo.';
         _isLoading    = false;
@@ -338,18 +344,21 @@ class _LoginPageState extends ConsumerState<LoginPage>
                     const SizedBox(height: 18),
 
                     // ── Campo Password ────────────────────────────────────
-                    _CleanPasswordField(
-                      controller: _passCtrl,
-                      textInputAction: TextInputAction.done,
-                      onChanged: (_) =>
-                          setState(() => _errorMessage = null),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) {
-                          return 'Ingresa tu contraseña';
-                        }
-                        if (v.length < 6) return 'Mínimo 6 caracteres';
-                        return null;
-                      },
+                    _ShakeWidget(
+                      key: _shakeKey,
+                      child: _CleanPasswordField(
+                        controller: _passCtrl,
+                        textInputAction: TextInputAction.done,
+                        onChanged: (_) =>
+                            setState(() => _errorMessage = null),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) {
+                            return 'Ingresa tu contraseña';
+                          }
+                          if (v.length < 6) return 'Mínimo 6 caracteres';
+                          return null;
+                        },
+                      ),
                     ),
                     const SizedBox(height: 14),
 
@@ -616,57 +625,87 @@ class _LoginButtonState extends State<_LoginButton>
                       strokeWidth: 2.5,
                       color: Colors.white,
                     ),
-                  )
-                : const Text(
-                    'Iniciar sesión',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+           // ─── Campo contraseña con validación en tiempo real ───────────────────────────
 
-// ─── Campo de texto con label flotante ───────────────────────────────────────
-
-class _CleanField extends StatelessWidget {
+class _CleanPasswordField extends StatefulWidget {
   final TextEditingController controller;
-  final String label;
-  final String hint;
-  final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final void Function(String)? onChanged;
   final String? Function(String?)? validator;
 
-  const _CleanField({
+  const _CleanPasswordField({
     required this.controller,
-    required this.label,
-    required this.hint,
-    this.keyboardType,
     this.textInputAction,
     this.onChanged,
     this.validator,
   });
 
   @override
+  State<_CleanPasswordField> createState() => _CleanPasswordFieldState();
+}
+
+class _CleanPasswordFieldState extends State<_CleanPasswordField> {
+  bool _visible = false;
+  bool _touched = false;
+
+  @override
   Widget build(BuildContext context) {
+    final value = widget.controller.text;
+    final error = _touched ? widget.validator?.call(value) : null;
+    final isValid = _touched && error == null && value.isNotEmpty;
+    final isError = _touched && error != null;
+
     return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      validator: validator,
-      onChanged: onChanged,
+      controller: widget.controller,
+      obscureText: !_visible,
+      textInputAction: widget.textInputAction,
+      validator: widget.validator,
+      onChanged: (v) {
+        setState(() => _touched = true);
+        widget.onChanged?.call(v);
+      },
       style: const TextStyle(
         fontFamily: 'Poppins',
         fontSize: 14,
         color: _kText,
+      ),
+      decoration: _buildDecoration(
+        label: 'Contraseña',
+        hint: 'Tu contraseña',
+      ).copyWith(
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icono de estado (válido / error)
+            if (isValid)
+              const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 19),
+              )
+            else if (isError)
+              const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: Icon(Icons.cancel_rounded, color: AppColors.error, size: 19),
+              ),
+            // Ojo ver/ocultar
+            IconButton(
+              onPressed: () => setState(() => _visible = !_visible),
+              icon: Icon(
+                _visible
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                size: 19,
+                color: _kHint,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+ _kText,
       ),
       decoration: _buildDecoration(label: label, hint: hint),
     );
@@ -726,9 +765,26 @@ class _CleanPasswordFieldState extends State<_CleanPasswordField> {
 
 // ─── Decoración compartida de campos ─────────────────────────────────────────
 
+Widget? _buildStatusIcon({required bool isValid, required bool isError}) {
+  if (isValid) {
+    return const Padding(
+      padding: EdgeInsets.only(right: 12),
+      child: Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 19),
+    );
+  }
+  if (isError) {
+    return const Padding(
+      padding: EdgeInsets.only(right: 12),
+      child: Icon(Icons.cancel_rounded, color: AppColors.error, size: 19),
+    );
+  }
+  return null;
+}
+
 InputDecoration _buildDecoration({
   required String label,
   required String hint,
+  Widget? statusIcon,
 }) {
   const focusBorder = OutlineInputBorder(
     borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -740,7 +796,11 @@ InputDecoration _buildDecoration({
   );
   const errorBorder = OutlineInputBorder(
     borderRadius: BorderRadius.all(Radius.circular(12)),
-    borderSide: BorderSide(color: AppColors.error, width: 1.2),
+    borderSide: BorderSide(color: AppColors.error, width: 1.5),
+  );
+  const validBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.all(Radius.circular(12)),
+    borderSide: BorderSide(color: Color(0xFF22C55E), width: 1.5),
   );
 
   return InputDecoration(
@@ -761,16 +821,74 @@ InputDecoration _buildDecoration({
     fillColor: Colors.white,
     contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
     border: normalBorder,
-    enabledBorder: normalBorder,
+    enabledBorder: statusIcon is Padding && (statusIcon as Padding).child is Icon &&
+        ((statusIcon).child as Icon).color == const Color(0xFF22C55E)
+        ? validBorder
+        : normalBorder,
     focusedBorder: focusBorder,
     errorBorder: errorBorder,
     focusedErrorBorder: errorBorder,
+    suffixIcon: statusIcon,
     errorStyle: const TextStyle(
       fontFamily: 'Poppins',
       fontSize: 11.5,
       color: AppColors.error,
+      fontWeight: FontWeight.w500,
     ),
   );
+}
+
+// ─── Shake Widget (sacude el campo al fallar credenciales) ──────────────────────
+
+class _ShakeWidget extends StatefulWidget {
+  final Widget child;
+  const _ShakeWidget({super.key, required this.child});
+
+  @override
+  _ShakeWidgetState createState() => _ShakeWidgetState();
+}
+
+class _ShakeWidgetState extends State<_ShakeWidget>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+    _anim = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.elasticIn),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void shake() {
+    _ctrl.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, child) {
+        final offset = (_anim.value * 8 * ((_anim.value * 6).ceil() % 2 == 0 ? 1 : -1)).clamp(-8.0, 8.0);
+        return Transform.translate(
+          offset: Offset(offset, 0),
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
 }
 
 // ─── Botón social ─────────────────────────────────────────────────────────────
